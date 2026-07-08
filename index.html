@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>ISET eTR on Stellar — Electronic Promissory Notes</title>
+<meta name="description" content="Issue and verify legally-structured Electronic Promissory Notes (ePN) — post-quantum signed, independently verifiable, settling in Stellar USDC. Live demo on Stellar testnet.">
+<meta name="theme-color" content="#0b0d12">
+<link rel="icon" href="https://iset.finance/assets/favicon.png">
+<meta property="og:title" content="ISET eTR on Stellar — Electronic Promissory Notes">
+<meta property="og:description" content="Legally-structured ePNs, post-quantum signed, settling in Stellar USDC.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/4.1.0/index.min.js" defer></script>
+<script src="https://iset.finance/assets/qr.js" defer></script>
+<style>
+:root{
+  --ink:#13202e;--ink2:#33414f;--ink3:#6b7686;--line:rgba(20,25,31,.12);
+  --bg:#eef1f6;--paper:#fff;--blue:#2456c8;--gold:#f5c518;--green:#1f7a33;
+  --stellar:#0f1216;--mono:'JetBrains Mono',ui-monospace,monospace;
+  --sans:'Plus Jakarta Sans',system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer;border:0}
+.wrap{max-width:820px;margin:0 auto;padding:0 16px}
+
+/* ── App header ── */
+.top{position:sticky;top:0;z-index:40;background:var(--stellar);color:#fff;padding:12px 0;box-shadow:0 6px 20px rgba(10,14,22,.25)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#3e6fe0,#0b1f4d);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:600;font-size:12px;flex:none}
+.brand b{font-size:15px;letter-spacing:-.01em;white-space:nowrap}
+.brand span{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#9db4dd;display:block;line-height:1.2}
+.wallet{display:flex;align-items:center;gap:8px;min-width:0}
+#connectBtn{background:var(--gold);color:#1a1503;font-weight:700;font-size:12.5px;padding:9px 14px;border-radius:8px;white-space:nowrap;transition:transform .15s,filter .15s}
+#connectBtn:hover{transform:translateY(-1px);filter:brightness(1.05)}
+#connectBtn.on{background:rgba(255,255,255,.12);color:#c8ffd9;border:1px solid rgba(120,220,150,.4);font-family:var(--mono);font-weight:500;font-size:11px}
+.wallet .dot{width:7px;height:7px;border-radius:50%;background:#41c463;flex:none;display:none}
+.wallet.on .dot{display:block}
+
+/* ── Hero ── */
+.hero{padding:34px 0 6px}
+.hero .kick{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--blue);font-weight:600}
+.hero h1{font-size:clamp(24px,5vw,34px);font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:8px 0 6px}
+.hero p{color:var(--ink2);font-size:14.5px;max-width:58ch}
+
+/* ── Cards ── */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:clamp(18px,3.5vw,26px);margin:18px 0;box-shadow:0 8px 26px rgba(20,30,50,.07)}
+.card h2{font-size:17px;font-weight:700;letter-spacing:-.01em;margin-bottom:14px}
+.lbl{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin:14px 0 5px;font-weight:600}
+.input{width:100%;height:44px;border:1px solid var(--line);border-radius:9px;background:#fbfcfe;padding:0 12px;font:inherit;font-size:14.5px;color:var(--ink)}
+.input:focus{outline:2px solid rgba(36,86,200,.35);border-color:var(--blue)}
+textarea.input{height:auto;min-height:60px;padding:10px 12px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+.issue-btn{width:100%;height:50px;background:var(--blue);color:#fff;font-weight:700;font-size:15px;border-radius:11px;margin-top:20px;transition:transform .15s,filter .15s}
+.issue-btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.issue-btn:disabled{opacity:.55;transform:none;cursor:wait}
+.err{margin-top:12px;background:rgba(155,36,36,.07);border:1px solid rgba(155,36,36,.25);color:#8c1f1f;border-radius:9px;padding:10px 13px;font-size:13px;display:none}
+.hint{font-size:12px;color:var(--ink3);margin-top:6px}
+
+/* ── Contract info box ── */
+.contract{display:flex;gap:11px;align-items:flex-start;background:#f6f8fc;border:1px dashed rgba(36,86,200,.35);border-radius:12px;padding:13px 15px;margin:18px 0}
+.contract .ic{flex:none;width:30px;height:30px;border-radius:8px;background:var(--stellar);display:flex;align-items:center;justify-content:center}
+.contract b{font-size:12.5px;display:block}
+.contract code{font-family:var(--mono);font-size:10.5px;word-break:break-all;color:var(--ink2)}
+.contract a{color:var(--blue);font-size:11.5px;font-weight:600}
+
+/* ── Document ── */
+.doc{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 18px 50px rgba(15,25,45,.14);margin:22px 0}
+.doc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px clamp(16px,3.5vw,26px);border-bottom:3px solid var(--gold)}
+.doc-head .co{display:flex;align-items:center;gap:11px;min-width:0}
+.doc-head .colo{width:40px;height:40px;border-radius:9px;background:linear-gradient(135deg,#f97316,#c2410c);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex:none}
+.doc-head .con{font-size:17px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:1px solid rgba(31,122,51,.4);background:rgba(31,122,51,.08);color:var(--green);padding:6px 12px;border-radius:20px;white-space:nowrap;flex:none}
+.doc-body{padding:clamp(18px,4vw,30px)}
+.doc-kick{text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink3)}
+.doc-title{text-align:center;font-size:clamp(18px,3.6vw,23px);font-weight:800;letter-spacing:.02em;margin-top:4px}
+.doc-sub{text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--blue);margin-top:3px}
+.doc-legal{text-align:center;font-style:italic;color:var(--ink3);font-size:12.5px;max-width:54ch;margin:12px auto 6px;line-height:1.55}
+.doc-amt{text-align:center;font-size:clamp(30px,7vw,44px);font-weight:800;letter-spacing:-.02em;margin:6px 0 4px;font-variant-numeric:tabular-nums}
+.doc-sec{margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+.doc-sec .sh{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--ink);margin-bottom:2px}
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:7px 0;border-bottom:1px dotted rgba(20,25,31,.09)}
+.kv:last-child{border-bottom:none}
+.kv .k{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);flex:none}
+.kv .v{font-size:14px;font-weight:700;text-align:right;word-break:break-word}
+.kv .v small{display:block;font-weight:500;font-size:11.5px;color:var(--ink3)}
+.kv .v.mono{font-family:var(--mono);font-size:11.5px;font-weight:500}
+.doc-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:16px clamp(16px,3.5vw,26px);border-top:1px solid var(--line);background:#fbfcfe}
+.doc-foot .lft{display:flex;align-items:center;gap:13px}
+#qrBox{width:64px;height:64px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:5px;flex:none}
+#qrBox svg{width:100%;height:100%;display:block}
+.verify-btn{background:var(--gold);color:#1a1503;font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.08em;padding:11px 20px;border-radius:8px;display:inline-block}
+.badges{display:flex;flex-direction:column;gap:9px}
+.badge{display:flex;align-items:center;gap:9px}
+.badge .bic{width:26px;height:26px;flex:none;display:flex;align-items:center;justify-content:center}
+.badge .bt{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);line-height:1.35}
+.badge .bt b{display:block;color:var(--ink);font-size:11.5px}
+.doc-sig{padding:12px clamp(16px,3.5vw,26px) 16px;background:#fbfcfe;border-top:1px solid var(--line)}
+.doc-sig .line{text-align:center;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px}
+.doc-sig .sig{font-family:var(--mono);font-size:9.5px;color:var(--ink3);word-break:break-all;line-height:1.6}
+.doc-sig .sig b{color:var(--ink2);font-weight:600}
+
+/* ── Verify panel ── */
+.vrow{display:flex;align-items:center;gap:11px;padding:9px 0;font-size:14px}
+.vrow .ok{flex:none;width:21px;height:21px;border-radius:50%;background:var(--green);position:relative}
+.vrow .ok::before{content:"";position:absolute;left:7px;top:4.5px;width:5px;height:9px;border-right:2.2px solid #fff;border-bottom:2.2px solid #fff;transform:rotate(40deg)}
+.vrow b{font-weight:700}
+.vrow .mono{font-family:var(--mono);font-size:11.5px;color:var(--ink2);word-break:break-all}
+
+footer{padding:26px 16px 40px;text-align:center;font-family:var(--mono);font-size:10.5px;color:var(--ink3);line-height:1.8}
+footer a{color:var(--blue)}
+@media print{.top,.hero,#formCard,.contract,footer,.no-print{display:none!important}body{background:#fff}.doc{box-shadow:none;border:none;margin:0}}
+</style>
+</head><body>
+
+<header class="top"><div class="wrap">
+  <div class="brand">
+    <span class="mark">eTR</span>
+    <div><b>ISET eTR</b><span>on Stellar · Testnet</span></div>
+  </div>
+  <div class="wallet" id="walletBox">
+    <span class="dot"></span>
+    <button id="connectBtn" type="button">Connect Stellar Wallet</button>
+  </div>
+</div></header>
+
+<main class="wrap">
+  <section class="hero">
+    <div class="kick">Electronic Promissory Note · ePN</div>
+    <h1>Issue a legally-structured ePN.<br>Settle it on Stellar.</h1>
+    <p>A promissory note issued as a digital record — post-quantum signed, independently verifiable, and structured to Philippine legal standards. Settlement rail: Stellar USDC.</p>
+  </section>
+
+  <div class="contract">
+    <span class="ic" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M20 7 12 3 4 7v10l8 4 8-4z"/><path d="M4 7l8 4 8-4M12 11v10"/></svg></span>
+    <div>
+      <b>Smart contract · Stellar testnet (Soroban)</b>
+      <code id="contractId">CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV</code><br>
+      <a href="https://stellar.expert/explorer/testnet/contract/CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV" target="_blank" rel="noopener">View on Stellar Expert →</a>
+    </div>
+  </div>
+
+  <!-- Verify panel (deep link ?id=) -->
+  <section class="card" id="verifyCard" style="display:none">
+    <h2>Registry verification</h2>
+    <div id="verifyBody"></div>
+  </section>
+
+  <!-- Issue form -->
+  <section class="card" id="formCard">
+    <h2>Create the note</h2>
+    <form id="epnForm" novalidate>
+      <div class="grid2">
+        <div><label class="lbl" for="fMaker">Maker — company name</label><input class="input" id="fMaker" placeholder="Manila Trade, Inc." required></div>
+        <div><label class="lbl" for="fMakerTin">Maker TIN</label><input class="input" id="fMakerTin" placeholder="123-456-789-000" inputmode="numeric"></div>
+      </div>
+      <div class="grid2">
+        <div><label class="lbl" for="fPayee">Pay to the order of — payee</label><input class="input" id="fPayee" placeholder="XYZ Manufacturing, Inc." required></div>
+        <div><label class="lbl" for="fPayeeTin">Payee TIN</label><input class="input" id="fPayeeTin" placeholder="987-654-321-000" inputmode="numeric"></div>
+      </div>
+      <div class="grid2">
+        <div><label class="lbl" for="fAmount">Principal amount</label><input class="input" id="fAmount" placeholder="550000" inputmode="decimal" required></div>
+        <div><label class="lbl" for="fCurrency">Currency</label>
+          <select class="input" id="fCurrency">
+            <option value="PHP" selected>PHP — Philippine Peso</option>
+            <option value="USDC">USDC — Stellar USDC</option>
+            <option value="USD">USD</option><option value="EUR">EUR</option>
+            <option value="SGD">SGD</option><option value="JPY">JPY</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid2">
+        <div><label class="lbl" for="fRate">Interest rate % p.a.</label><input class="input" id="fRate" placeholder="5.5" inputmode="decimal"></div>
+        <div><label class="lbl" for="fMaturity">Maturity date</label><input class="input" id="fMaturity" type="date" required></div>
+      </div>
+      <div class="grid2">
+        <div><label class="lbl" for="fIssueDate">Issue date</label><input class="input" id="fIssueDate" type="date" required></div>
+        <div><label class="lbl" for="fPlace">Place of issue</label><input class="input" id="fPlace" value="Philippines"></div>
+      </div>
+      <label class="lbl" for="fMemo">Notes (optional)</label>
+      <input class="input" id="fMemo" placeholder="Reference or terms note">
+      <button class="issue-btn" id="issueBtn" type="submit">Issue ePN — signed &amp; registered</button>
+      <p class="hint">Issued in sandbox on the live ISET registry — fully signed and verifiable, no legal effect. Connect a Stellar wallet above to bind the record to your testnet address.</p>
+      <div class="err" id="errBox"></div>
+    </form>
+  </section>
+
+  <!-- Generated document -->
+  <section class="doc" id="docCard" style="display:none" aria-live="polite">
+    <div class="doc-head">
+      <div class="co"><span class="colo" id="dLogo">MT</span><span class="con" id="dCompany">—</span></div>
+      <span class="pill" id="dPill">✓ Verified · Sandbox</span>
+    </div>
+    <div class="doc-body">
+      <div class="doc-kick">Electronic Promissory Note</div>
+      <div class="doc-title">ELECTRONIC PROMISSORY NOTE</div>
+      <div class="doc-sub">ePN · Issued via ISET eTR</div>
+      <p class="doc-legal">For value received, the maker unconditionally promises to pay the payee the principal sum stated under the terms below:</p>
+      <div class="doc-amt" id="dAmount">—</div>
+
+      <div class="doc-sec"><div class="sh">Parties</div>
+        <div class="kv"><span class="k">Maker (Promisor)</span><span class="v" id="dMaker">—<small id="dMakerTin"></small></span></div>
+        <div class="kv"><span class="k">Pay to the order of:</span><span class="v" id="dPayee">—<small id="dPayeeTin"></small></span></div>
+      </div>
+      <div class="doc-sec"><div class="sh">Terms</div>
+        <div class="kv"><span class="k">Interest rate (p.a.)</span><span class="v" id="dRate">—</span></div>
+        <div class="kv"><span class="k">Maturity date</span><span class="v" id="dMaturity">—</span></div>
+        <div class="kv"><span class="k">Place of issue</span><span class="v" id="dPlace">Philippines</span></div>
+      </div>
+      <div class="doc-sec"><div class="sh">Registry</div>
+        <div class="kv"><span class="k">Reference</span><span class="v mono" id="dRef">—</span></div>
+        <div class="kv"><span class="k">Controller — Holder</span><span class="v" id="dHolder">—</span></div>
+        <div class="kv"><span class="k">Issued by</span><span class="v" id="dIssuer">—</span></div>
+        <div class="kv"><span class="k">Status</span><span class="v" id="dStatus">—</span></div>
+        <div class="kv"><span class="k">Issued on</span><span class="v" id="dIssuedOn">—</span></div>
+        <div class="kv"><span class="k">Audit</span><span class="v mono" id="dAudit">—</span></div>
+      </div>
+    </div>
+    <div class="doc-foot">
+      <div class="lft">
+        <div id="qrBox" aria-label="Verification QR"></div>
+        <a class="verify-btn" id="dVerifyBtn" href="#" target="_blank" rel="noopener">VERIFY</a>
+      </div>
+      <div class="badges">
+        <div class="badge">
+          <span class="bic" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1f7a33" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(31,122,51,.1)"/><path d="M9 12l2 2 4-4"/></svg></span>
+          <span class="bt">Secured<b>by ISET eTR</b></span>
+        </div>
+        <div class="badge">
+          <span class="bic" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#0f1216"/><path d="M17.6 8.1 7.3 13.4c-.3.15-.65-.07-.65-.4v-1.2c0-.3.17-.58.44-.72l10-5.1c.33-.17.72.07.72.44v.93c0 .3-.16.57-.43.71zM6.4 15.9l10.3-5.3c.3-.15.65.07.65.4v1.2c0 .3-.17.58-.44.72l-10 5.1c-.33.17-.72-.07-.72-.44v-.93c0-.3.16-.57.43-.71z" fill="#fff"/></svg></span>
+          <span class="bt">Settlement:<b>Stellar USDC</b></span>
+        </div>
+      </div>
+    </div>
+    <div class="doc-sig">
+      <div class="line">Post-Quantum Signed (ML-DSA-65) · Independently Verifiable · MLETR Compliant</div>
+      <div class="sig" id="dSig"></div>
+    </div>
+  </section>
+
+  <div class="no-print" id="afterDoc" style="display:none;text-align:center;margin:6px 0 10px">
+    <button class="verify-btn" type="button" onclick="window.print()" style="background:#fff;border:1px solid var(--line)">PRINT / PDF</button>
+  </div>
+</main>
+
+<footer>
+  ISET eTR on Stellar — hackathon demo · registry &amp; signing by <a href="https://iset.finance" target="_blank" rel="noopener">iset.finance</a><br>
+  Records issued here are <b>sandbox</b>: fully signed, fully verifiable, no legal effect.<br>
+  © 2026 ISET. All rights reserved.
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  var API = 'https://iset.finance';
+  // Global per spec: the connected Stellar Testnet public key, available app-wide.
+  window.STELLAR_PUBKEY = null;
+  window.SOROBAN_CONTRACT_ID = 'CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV';
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmtAmt(n){ var x = Number(n); return isFinite(x) ? x.toLocaleString('en-US',{maximumFractionDigits:2}) : String(n); }
+  function trunc(k){ return k ? k.slice(0,4)+'…'+k.slice(-4) : ''; }
+  function initials(name){
+    var w = String(name||'').trim().split(/\s+/).filter(Boolean);
+    return ((w[0]||'e')[0] + (w[1]?w[1][0]:'')).toUpperCase() || 'eP';
+  }
+  function fmtDate(d){
+    if(!d) return '—';
+    try { var dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); }
+    catch(e){ return d; }
+  }
+  function today(){ return new Date().toISOString().slice(0,10); }
+
+  /* ── Freighter wallet connect ── */
+  var btn = $('connectBtn'), walletBox = $('walletBox');
+  function setConnected(pk){
+    window.STELLAR_PUBKEY = pk;
+    btn.textContent = trunc(pk);
+    btn.classList.add('on');
+    walletBox.classList.add('on');
+    btn.title = pk + ' (Stellar testnet)';
+  }
+  async function connect(){
+    var api = window.freighterApi;
+    if (!api) {
+      showErr('Freighter wallet not detected. Install the extension at freighter.app (desktop), then reload. You can still issue sandbox notes without a wallet.');
+      window.open('https://www.freighter.app/','_blank','noopener');
+      return;
+    }
+    try {
+      var addr = null;
+      if (api.requestAccess) {
+        var r = await api.requestAccess();
+        addr = (r && typeof r === 'object') ? (r.address || r.publicKey) : r;
+        if (r && r.error) throw new Error(r.error.message || r.error);
+      }
+      if (!addr && api.getAddress) { var g = await api.getAddress(); addr = (g && g.address) || g; }
+      if (!addr && api.getPublicKey) addr = await api.getPublicKey();
+      if (!addr || typeof addr !== 'string' || addr[0] !== 'G') throw new Error('No address returned — unlock Freighter and try again.');
+      setConnected(addr);
+      hideErr();
+    } catch (e) {
+      showErr('Wallet connection failed: ' + (e && e.message ? e.message : 'request rejected'));
+    }
+  }
+  btn.addEventListener('click', function(){ if (!window.STELLAR_PUBKEY) connect(); });
+
+  /* ── Errors ── */
+  function showErr(m){ var b=$('errBox'); b.textContent=m; b.style.display='block'; }
+  function hideErr(){ $('errBox').style.display='none'; }
+
+  /* ── Issue flow ── */
+  $('fIssueDate').value = today();
+  (function(){ var d=new Date(); d.setDate(d.getDate()+90); $('fMaturity').value = d.toISOString().slice(0,10); })();
+
+  $('epnForm').addEventListener('submit', async function(ev){
+    ev.preventDefault(); hideErr();
+    var maker = $('fMaker').value.trim(), payee = $('fPayee').value.trim();
+    var amount = ($('fAmount').value||'').replace(/[,\s]/g,'');
+    if (!maker)  return showErr('Enter the maker (promisor) company name.');
+    if (!payee)  return showErr('Enter the payee — who the note is payable to.');
+    if (!(Number(amount) > 0)) return showErr('Enter a principal amount greater than zero.');
+    var f = {
+      maker: maker, maker_tin: $('fMakerTin').value.trim(),
+      payee: payee, payee_tin: $('fPayeeTin').value.trim(),
+      interest_rate: $('fRate').value.trim(), issue_date: $('fIssueDate').value,
+      maturity_date: $('fMaturity').value, place_of_issue: $('fPlace').value.trim() || 'Philippines',
+      settlement_rail: 'Stellar USDC (testnet)',
+      stellar_pubkey: window.STELLAR_PUBKEY || ''
+    };
+    var b = $('issueBtn'); b.disabled = true; b.textContent = 'Issuing & signing…';
+    try {
+      var res = await fetch(API + '/api/etr/stellar-issue', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          type: 'ePN', amount: Number(amount).toFixed(2), currency: $('fCurrency').value,
+          holder_ref: payee, memo: $('fMemo').value.trim() || undefined,
+          stellar_pubkey: window.STELLAR_PUBKEY || undefined, fields: f
+        })
+      });
+      var body = null, text = await res.text();
+      try { body = text ? JSON.parse(text) : null; } catch(e){}
+      if (!res.ok) throw new Error((body && (body.error || body.message)) || ('HTTP ' + res.status));
+      renderDoc(body, f, Number(amount), $('fCurrency').value);
+    } catch (e) {
+      showErr('Issuance failed: ' + (e && e.message ? e.message : 'network error') + ' — the registry may be briefly unavailable; try again.');
+    } finally {
+      b.disabled = false; b.textContent = 'Issue ePN — signed & registered';
+    }
+  });
+
+  function verifyUrl(id){ return location.origin + '/?id=' + encodeURIComponent(id); }
+
+  function renderDoc(r, f, amount, currency){
+    $('dCompany').textContent = f.maker;
+    $('dLogo').textContent = initials(f.maker);
+    $('dPill').textContent = '✓ Verified · ' + (r.sandbox === false ? 'Registered' : 'Sandbox');
+    $('dAmount').textContent = currency + ' ' + fmtAmt(amount);
+    $('dMaker').firstChild.textContent = f.maker;
+    $('dMakerTin').textContent = f.maker_tin ? 'TIN: ' + f.maker_tin : '';
+    $('dPayee').firstChild.textContent = f.payee;
+    $('dPayeeTin').textContent = f.payee_tin ? 'TIN: ' + f.payee_tin : '';
+    $('dRate').textContent = f.interest_rate ? (f.interest_rate + '%') : 'Non-interest-bearing';
+    $('dMaturity').textContent = fmtDate(f.maturity_date);
+    $('dPlace').textContent = f.place_of_issue;
+    $('dRef').textContent = r.etr_id || '—';
+    $('dHolder').textContent = f.payee + (f.stellar_pubkey ? ' · ' + trunc(f.stellar_pubkey) : '');
+    $('dIssuer').textContent = f.maker;
+    $('dStatus').textContent = (r.status || 'registered') + (r.sandbox === false ? '' : ' · sandbox');
+    $('dIssuedOn').textContent = fmtDate(f.issue_date);
+    $('dAudit').textContent = r.audit_id || '—';
+    $('dVerifyBtn').href = verifyUrl(r.etr_id);
+    $('dSig').innerHTML =
+      '<b>Signature ' + esc(r.signature_alg || 'ML-DSA-65') + ':</b> ' + esc(String(r.signature||'').slice(0,64)) + '…<br>' +
+      '<b>Record hash:</b> ' + esc(r.record_hash || '') + '<br>' +
+      'Registry record, verifiable by reference' + (f.stellar_pubkey ? ' · bound to Stellar ' + esc(trunc(f.stellar_pubkey)) : '') + '.';
+    try {
+      if (window.QR && window.QR.svg) { $('qrBox').innerHTML = window.QR.svg(verifyUrl(r.etr_id)); }
+      else if (window.QR) { $('qrBox').innerHTML = window.QR(verifyUrl(r.etr_id)); }
+    } catch(e){ $('qrBox').style.display = 'none'; }
+    $('docCard').style.display = 'block';
+    $('afterDoc').style.display = 'block';
+    $('docCard').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  /* ── Verify deep link (?id=) — the QR / VERIFY target ── */
+  var qid = new URLSearchParams(location.search).get('id');
+  if (qid && /^[A-Za-z0-9_-]{4,60}$/.test(qid)) {
+    $('verifyCard').style.display = 'block';
+    $('verifyBody').innerHTML = '<p style="font-size:13.5px;color:var(--ink3)">Checking <span class="mono">' + esc(qid) + '</span> against the registry…</p>';
+    fetch(API + '/api/etr/verify/' + encodeURIComponent(qid))
+      .then(function(r){ return r.json(); })
+      .then(function(v){
+        var ok = v && (v.valid || v.ok || v.record || v.etr_id || v.status);
+        if (!ok) throw new Error((v && v.error) || 'not found');
+        var rec = v.record || v;
+        $('verifyBody').innerHTML =
+          '<div class="vrow"><span class="ok"></span><span>Record <b class="mono">' + esc(qid) + '</b> found in the registry</span></div>' +
+          '<div class="vrow"><span class="ok"></span><span>Signature <b>valid</b> · ' + esc(rec.signature_alg || 'ML-DSA-65 (post-quantum)') + '</span></div>' +
+          (rec.record_hash ? '<div class="vrow"><span class="ok"></span><span class="mono">' + esc(rec.record_hash) + '</span></div>' : '') +
+          '<div class="vrow"><span class="ok"></span><span>Status: <b>' + esc(rec.status || 'registered') + (rec.sandbox === false ? '' : ' · sandbox') + '</b>' +
+          (rec.instrument ? ' · ' + esc(rec.instrument) : '') + (rec.amount ? ' · ' + esc(rec.currency||'') + ' ' + fmtAmt(rec.amount) : '') + '</span></div>' +
+          '<p style="margin-top:10px;font-size:12px;color:var(--ink3)">Verified against the ISET registry of record. Anyone with this reference can repeat this check — no account needed.</p>';
+      })
+      .catch(function(e){
+        $('verifyBody').innerHTML = '<p style="color:#8c1f1f;font-size:13.5px">Could not verify <span class="mono">' + esc(qid) + '</span> — ' + esc(e.message||'not found') + '.</p>';
+      });
+  }
+})();
+</script>
+</body></html>
