@@ -101,6 +101,16 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 .icard .is{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
 .cath{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--soft);font-weight:700;margin:16px 0 8px}
 .cath:first-of-type{margin-top:4px}
+/* Primary audience — MSMEs dominate the section */
+.cath.primary{font-size:19px;font-weight:800;letter-spacing:-.02em;text-transform:none;color:var(--ink);margin:6px 0 10px}
+.industries.primary{grid-template-columns:1fr;gap:8px}
+.industries.primary .icard{display:flex;align-items:flex-start;gap:12px;padding:14px;border-left:4px solid var(--accent)}
+.industries.primary .icard-i{font-size:24px;flex:0 0 auto}
+.industries.primary .it{font-size:15px;font-weight:800;margin-top:0}
+.industries.primary .is{font-size:12.5px;margin-top:3px}
+@media (max-width:600px){
+  .industries.primary{grid-template-columns:1fr;grid-auto-flow:row;grid-auto-columns:unset;overflow-x:visible;padding-bottom:0}
+}
 .topactions{display:flex;align-items:center;gap:8px}
 .iconbtn{background:var(--bg2);border:1px solid var(--line);color:var(--ink);width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 34px}
 .cardhero{border-radius:12px;padding:14px 16px;margin:0 0 14px;color:#fff;background:linear-gradient(140deg,var(--ha,#3b82f6),#0b1f3a 94%);box-shadow:0 8px 22px rgba(8,20,40,.35)}
@@ -248,22 +258,23 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
         <h2>Who uses the ePN?</h2>
         <p class="muted">A universal legal instrument for deferred payment — anywhere a promise to pay needs to be provable.</p>
 
-        <div class="cath">Supply chain &amp; trade</div>
-        <div class="industries">
-          <div class="icard"><span class="icard-i">🏭</span><div class="it">Suppliers &amp; Manufacturers</div><div class="is">Securing accounts receivable — deliver now, hold a note that holds up.</div></div>
-          <div class="icard"><span class="icard-i">🚢</span><div class="it">Importers &amp; Exporters</div><div class="is">Cross-border trade credit both ends can verify.</div></div>
+        <div class="cath primary">MSMEs &amp; Small Businesses</div>
+        <div class="industries primary">
+          <div class="icard"><span class="icard-i">🏭</span><div><div class="it">SME Suppliers &amp; Manufacturers</div><div class="is">Securing accounts receivable from large corporate buyers.</div></div></div>
+          <div class="icard"><span class="icard-i">🏪</span><div><div class="it">Micro-merchants &amp; Traders</div><div class="is">Digitizing informal trade agreements into signed, verifiable notes.</div></div></div>
+          <div class="icard"><span class="icard-i">🚢</span><div><div class="it">SME Importers &amp; Exporters</div><div class="is">Accessing cross-border trade credit both ends can verify.</div></div></div>
         </div>
 
         <div class="cath">Financial institutions</div>
         <div class="industries">
-          <div class="icard"><span class="icard-i">🏦</span><div class="it">Lenders &amp; Factoring Companies</div><div class="is">Monetizing trade receivables against a controllable instrument.</div></div>
-          <div class="icard"><span class="icard-i">🏛️</span><div class="it">Corporate Banks</div><div class="is">Digitizing trade portfolios — one registry, verifiable notes.</div></div>
+          <div class="icard"><span class="icard-i">🏦</span><div class="it">Lenders &amp; Factoring Companies</div><div class="is">Monetizing MSME trade receivables.</div></div>
+          <div class="icard"><span class="icard-i">🏛️</span><div class="it">Corporate Banks</div><div class="is">Digitizing trade portfolios.</div></div>
         </div>
 
-        <div class="cath">The long-tail economy</div>
+        <div class="cath">Independent professionals &amp; long tail</div>
         <div class="industries">
-          <div class="icard"><span class="icard-i">💼</span><div class="it">Freelancers &amp; Independent Professionals</div><div class="is">Structuring client payment terms as a signed note.</div></div>
-          <div class="icard"><span class="icard-i">🌾</span><div class="it">Agri-Business &amp; Cooperatives</div><div class="is">Securing post-harvest payments for growers and co-ops.</div></div>
+          <div class="icard"><span class="icard-i">💼</span><div class="it">Freelancers &amp; Gig Workers</div><div class="is">Structuring client payment terms.</div></div>
+          <div class="icard"><span class="icard-i">🌾</span><div class="it">Agri-Business &amp; Cooperatives</div><div class="is">Securing post-harvest payments.</div></div>
         </div>
       </div>
 
@@ -774,7 +785,14 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     var server=new RpcNS.Server(RPC_URL);
     var acct;
     try{ acct=await server.getAccount(window.STELLAR_PUBKEY); }
-    catch(e){ throw new Error('Account not funded on testnet — get free XLM at friendbot.stellar.org?addr='+window.STELLAR_PUBKEY); }
+    catch(e){
+      // New testnet account — fund it automatically via friendbot, then retry once.
+      onStatus&&onStatus('Funding testnet account (friendbot)…');
+      try{
+        await fetch('https://friendbot.stellar.org/?addr='+encodeURIComponent(window.STELLAR_PUBKEY));
+        acct=await server.getAccount(window.STELLAR_PUBKEY);
+      }catch(e2){ throw new Error('Account not funded on testnet — get free XLM at friendbot.stellar.org?addr='+window.STELLAR_PUBKEY); }
+    }
     var contract=new S.Contract(window.SOROBAN_CONTRACT_ID);
     var tx=new S.TransactionBuilder(acct,{fee:'100',networkPassphrase:S.Networks.TESTNET})
       .addOperation(contract.call.apply(contract,[fn].concat(args)))
