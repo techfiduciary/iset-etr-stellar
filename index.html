@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-<title>ePN — Electronic Promissory Notes · by ISET on Stellar</title>
+<title>eTransferable Records · by ISET on Stellar</title>
 <meta name="description" content="Issue, hold, and verify Electronic Promissory Notes — post-quantum signed, independently verifiable, settling in Stellar USDC.">
 <meta name="theme-color" content="#0b1f3a">
 <link rel="icon" type="image/png" href="/assets/eTR.png">
 <link rel="apple-touch-icon" href="/assets/eTR.png">
-<meta property="og:title" content="ePN — Electronic Promissory Notes · by ISET on Stellar">
+<meta property="og:title" content="eTransferable Records · by ISET on Stellar">
 <meta property="og:description" content="Post-quantum signed promissory notes, settling in Stellar USDC.">
 <meta property="og:image" content="/assets/eTR.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/4.1.0/index.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@albedo-link/intent@0.12.0/lib/albedo.intent.js" defer></script>
 <script src="https://iset.finance/assets/qr.js" defer></script>
 <style>
 :root{
@@ -112,9 +113,14 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 .invsub{font-size:11.5px;color:var(--muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .invact{display:flex;gap:6px;flex-shrink:0}
 .brandprev{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-left-width:4px;border-radius:10px;padding:12px;margin:6px 0 14px;background:var(--bg2)}
-.brandprev-logo{width:42px;height:42px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px}
+.brandprev-logo{width:42px;height:42px;border-radius:8px;object-fit:cover;background:#fff;flex:0 0 42px}
+.brandprev-ph{width:42px;height:42px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;flex:0 0 42px}
 .brandprev-name{font-weight:700;font-size:15px}
 .brandprev-sub{font-size:11px;color:var(--muted)}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-top:8px}
+.seg button{flex:1;background:var(--bg2);color:var(--muted);border:0;padding:8px;font-size:13px;font-weight:600;cursor:pointer}
+.seg button.on{background:var(--accent);color:#fff}
+.doc-head .colo img{width:100%;height:100%;object-fit:cover;border-radius:9px;display:block}
 .vbadges{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 4px}
 .vbadge{box-sizing:border-box;display:inline-flex;flex:0 0 auto;align-items:center;gap:5px;margin:0;font-size:11px;line-height:1;height:26px;color:var(--muted);background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:0 10px;white-space:nowrap;vertical-align:middle}
 .vbadge.ok{color:var(--ok);border-color:rgba(52,211,153,.35);background:rgba(52,211,153,.10)}
@@ -181,9 +187,9 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 
   <header class="topbar">
     <div class="brand">
-      <img class="logo" src="/assets/eTR.png" alt="ePN" width="34" height="34">
+      <img class="logo" src="/assets/eTR.png" alt="eTransferable Records" width="34" height="34">
       <div class="brandtext">
-        <span class="mark">ePN</span>
+        <span class="mark">eTransferable Records</span>
         <span class="sub">by ISET · on Stellar</span>
       </div>
     </div>
@@ -211,7 +217,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     <!-- ── HOME ── -->
     <section id="view-home">
       <div class="hero">
-        <span class="eyebrow">Electronic Promissory Note · eTR</span>
+        <span class="eyebrow">Electronic Promissory Note · ePN</span>
         <h1><span class="hero-rot" id="heroLine">The note is the asset.</span></h1>
         <p>Issue a promissory note as a digital record — post-quantum signed, independently verifiable, structured to Philippine legal standards. Settlement rail: Stellar USDC.</p>
         <div class="actions">
@@ -296,7 +302,15 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
             <div><label class="lbl">Issue date</label><input class="input" id="fIssueDate" type="date"></div>
             <div><label class="lbl">Place of issue</label><input class="input" id="fPlace" value="Philippines"></div>
           </div>
-          <label class="lbl">Notes (optional)</label>
+          <label class="lbl">Purpose of Note</label>
+          <select class="input" id="fPurpose">
+            <option selected>Working Capital</option>
+            <option>Trade Finance (Import/Export)</option>
+            <option>Inventory Financing</option>
+            <option>Equipment / Asset Purchase</option>
+            <option>General Business Operations</option>
+          </select>
+          <label class="lbl">Remarks (optional)</label>
           <input class="input" id="fMemo" placeholder="Reference or terms note">
           <button class="btn full" id="issueBtn" type="submit">Issue ePN — signed &amp; registered</button>
           <p class="err" id="issueErr" style="display:none"></p>
@@ -341,6 +355,8 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
             <div class="kv"><span class="k">Interest rate (p.a.)</span><span class="v" id="dRate">—</span></div>
             <div class="kv"><span class="k">Maturity date</span><span class="v" id="dMaturity">—</span></div>
             <div class="kv"><span class="k">Place of issue</span><span class="v" id="dPlace">Philippines</span></div>
+            <div class="kv"><span class="k">Purpose</span><span class="v" id="dPurpose">Working Capital</span></div>
+            <div class="kv" id="dRemarksRow" style="display:none"><span class="k">Remarks</span><span class="v" id="dRemarks"></span></div>
           </div>
           <div class="doc-sec"><div class="sh">Registry</div>
             <div class="kv"><span class="k">Reference</span><span class="v mono" id="dRef">—</span></div>
@@ -399,24 +415,56 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     <!-- ── BRAND ── -->
     <section id="view-brand" hidden>
       <div class="card">
-        <div class="cardhero" style="--ha:#e08a2e">
-          <div class="cardhero-k">Your brand</div>
-          <div class="cardhero-t">How your notes look</div>
-          <p class="cardhero-s">Shown on every note you issue from this device.</p>
-        </div>
+        <h2>Your identity &amp; brand</h2>
+        <p class="muted">Claim a handle, add your logo and details — they appear on every note your counterparties open.</p>
+
         <div class="brandprev" id="brandPrev">
-          <span class="brandprev-logo" id="bpLogo">MT</span>
-          <div><div class="brandprev-name" id="bpName">Your company</div><div class="brandprev-sub">Appears on the note header</div></div>
+          <span id="bpLogoSlot"><span class="brandprev-ph" id="bpLogo">eR</span></span>
+          <div><div class="brandprev-name" id="bpName">Your business</div><div class="brandprev-sub" id="bpSub">individual</div></div>
         </div>
-        <label class="lbl">Company / display name</label>
-        <input class="input" id="bName" placeholder="Manila Trade, Inc.">
-        <label class="lbl">Brand color</label>
-        <div class="row" style="flex-direction:row">
-          <input class="input" id="bColor" type="color" value="#c2410c" style="flex:0 0 64px;padding:4px;height:44px">
-          <input class="input" id="bColorHex" placeholder="#c2410c">
+
+        <label class="lbl">Your handle</label>
+        <div class="row" style="flex-direction:row;align-items:center;gap:6px">
+          <span style="color:var(--muted)">@</span>
+          <input class="input" id="bHandle" placeholder="yourname">
+          <button class="btn" id="bClaim" style="flex:0 0 auto">Claim</button>
         </div>
-        <button class="btn full" id="bSave">Save brand</button>
-        <p class="note">Stored on this device only. The name auto-fills the Maker field when you issue.</p>
+        <div class="seg">
+          <button type="button" id="segInd" class="on">Individual</button>
+          <button type="button" id="segCo">Company</button>
+        </div>
+        <p class="note" style="margin-top:6px">A company handle is its own identity, separate from your personal one. This is a friendly handle — not the authoritative fID rail.</p>
+
+        <label class="lbl">Business / your name</label>
+        <input class="input" id="bName" placeholder="Dela Cruz Trading">
+
+        <label class="lbl">Tax ID / TIN (for valid notes)</label>
+        <input class="input" id="bTin" placeholder="000-000-000-000">
+
+        <label class="lbl">PPSR Individual ID</label>
+        <input class="input" id="bPpsr" placeholder="2026-292369" title="Log in at PPSR → top-right Settings icon → My Account to find your PPSR Individual ID">
+        <p class="note" style="margin-top:4px">Used to perfect an assignment (RA 11057). Find it at PPSR → Settings (top-right) → My Account.
+          <a class="link" href="https://portal.ppsr.lra.gov.ph/account/register?type=Individual" target="_blank" rel="noopener">Register a PPSR Individual ID ↗</a></p>
+
+        <label class="lbl">Business address</label>
+        <input class="input" id="bAddress" placeholder="Street, City, Country">
+        <label class="lbl">Contact email</label>
+        <input class="input" id="bEmail" type="email" placeholder="you@business.com">
+        <label class="lbl">Logo (PNG/JPG, ≤180 KB)</label>
+        <input class="input" id="bLogoFile" type="file" accept="image/*">
+        <div class="row" style="flex-direction:row;margin-top:10px;align-items:center">
+          <div style="flex:0 0 auto">
+            <label class="lbl" style="margin-top:0">Accent colour</label>
+            <input type="color" id="bColor" value="#2456C8" style="width:52px;height:38px;border:none;background:none">
+          </div>
+          <div style="flex:1">
+            <label class="lbl" style="margin-top:0">Verify link (optional)</label>
+            <input class="input" id="bVerify" placeholder="https://yoursite.com">
+          </div>
+        </div>
+
+        <button class="btn full" id="bSave">Save brand &amp; details</button>
+        <p class="note">Stored on this device and applied to the counterparty-facing note. ISET stays only in the signature and provenance.</p>
       </div>
     </section>
   </main>
@@ -484,15 +532,34 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   }
   async function connect(){
     var api=window.freighterApi;
-    if(!api){ toast('Freighter not detected — install the desktop extension at freighter.app','err'); window.open('https://www.freighter.app/','_blank','noopener'); return; }
-    try{
-      var addr=null;
-      if(api.requestAccess){ var r=await api.requestAccess(); if(r&&r.error)throw new Error(r.error.message||r.error); addr=(r&&typeof r==='object')?(r.address||r.publicKey):r; }
-      if(!addr&&api.getAddress){ var g=await api.getAddress(); addr=(g&&g.address)||g; }
-      if(!addr&&api.getPublicKey) addr=await api.getPublicKey();
-      if(!addr||typeof addr!=='string'||addr[0]!=='G') throw new Error('No address returned — unlock Freighter and try again.');
-      setConnected(addr); toast('Wallet connected · '+trunc(addr));
-    }catch(e){ toast('Connect failed: '+(e&&e.message?e.message:'request rejected'),'err'); }
+    // 1) Freighter extension (desktop) — ask it first when present.
+    if(api){
+      try{
+        var installed=true;
+        if(api.isConnected){ try{ var ic=await api.isConnected(); installed=(ic&&typeof ic==='object')?ic.isConnected!==false:ic!==false; }catch(e){ installed=true; } }
+        if(installed){
+          var addr=null;
+          if(api.requestAccess){ var r=await api.requestAccess(); if(r&&r.error)throw new Error(r.error.message||r.error); addr=(r&&typeof r==='object')?(r.address||r.publicKey):r; }
+          if(!addr&&api.getAddress){ var g=await api.getAddress(); addr=(g&&g.address)||g; }
+          if(!addr&&api.getPublicKey) addr=await api.getPublicKey();
+          if(addr&&typeof addr==='string'&&addr[0]==='G'){ setConnected(addr); toast('Wallet connected · '+trunc(addr)); return; }
+        }
+      }catch(e){
+        var m=(e&&e.message)||'';
+        if(/reject|denied|declin/i.test(m)){ toast('Connect cancelled','err'); return; }
+        /* extension not really there / API error → fall through to Albedo */
+      }
+    }
+    // 2) Albedo web wallet — works in any browser, including mobile.
+    if(window.albedo&&window.albedo.publicKey){
+      try{
+        var res=await window.albedo.publicKey({});
+        if(res&&res.pubkey&&res.pubkey[0]==='G'){ setConnected(res.pubkey); toast('Wallet connected · '+trunc(res.pubkey)); return; }
+        throw new Error('no key returned');
+      }catch(e2){ toast('Connect cancelled','err'); return; }
+    }
+    toast('No Stellar wallet found — install Freighter (desktop) at freighter.app','err');
+    window.open('https://www.freighter.app/','_blank','noopener');
   }
   $('connectBtn').addEventListener('click',connect);
   // Silent restore: if the user connected before and Freighter still authorizes us.
@@ -505,19 +572,52 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     },250);
   })();
 
-  /* ── Brand ── */
+  /* ── Identity & brand (same details as eINV) ── */
   function getBrand(){ return store('epn-brand')||{}; }
-  function loadBrandForm(){ var b=getBrand(); $('bName').value=b.name||''; $('bColor').value=b.color||'#c2410c'; $('bColorHex').value=b.color||'#c2410c'; paintBrandPrev(); }
-  function paintBrandPrev(){ var n=$('bName').value.trim()||'Your company', c=$('bColor').value;
-    $('bpLogo').textContent=initials(n); $('bpLogo').style.background='linear-gradient(135deg,'+c+','+c+'cc)';
-    $('bpName').textContent=n; $('brandPrev').style.borderLeftColor=c; }
-  ['input','change'].forEach(function(ev){ $('bName').addEventListener(ev,paintBrandPrev); $('bColor').addEventListener(ev,function(){ $('bColorHex').value=$('bColor').value; paintBrandPrev(); }); $('bColorHex').addEventListener(ev,function(){ if(/^#[0-9a-fA-F]{6}$/.test($('bColorHex').value)){ $('bColor').value=$('bColorHex').value; paintBrandPrev(); } }); });
-  $('bSave').addEventListener('click',function(){ store('epn-brand',{name:$('bName').value.trim(),color:$('bColor').value}); toast('Brand saved'); });
+  var bLogoData=null, bAcct='individual';
+  function loadBrandForm(){ var b=getBrand();
+    $('bName').value=b.name||''; $('bColor').value=b.color||'#2456C8'; $('bVerify').value=b.verify||'';
+    $('bTin').value=b.tin||''; $('bPpsr').value=b.ppsr||''; $('bAddress').value=b.address||''; $('bEmail').value=b.email||'';
+    $('bHandle').value=b.handle||''; bLogoData=b.logo||null; bAcct=(b.acct==='institution')?'institution':'individual';
+    segPaint(); paintBrandPrev(); }
+  function segPaint(){ $('segInd').classList.toggle('on',bAcct==='individual'); $('segCo').classList.toggle('on',bAcct==='institution'); }
+  $('segInd').addEventListener('click',function(){ bAcct='individual'; segPaint(); paintBrandPrev(); });
+  $('segCo').addEventListener('click',function(){ bAcct='institution'; segPaint(); paintBrandPrev(); });
+  function paintBrandPrev(){
+    var n=$('bName').value.trim()||'Your business', c=$('bColor').value, h=$('bHandle').value.trim().replace(/^@/,''), tin=$('bTin').value.trim();
+    if(bLogoData){ $('bpLogoSlot').innerHTML='<img class="brandprev-logo" alt="" src="'+bLogoData+'">'; }
+    else { $('bpLogoSlot').innerHTML='<span class="brandprev-ph" id="bpLogo">'+esc(initials(n))+'</span>'; document.querySelector('#bpLogoSlot .brandprev-ph').style.background='linear-gradient(135deg,'+c+','+c+'cc)'; }
+    $('bpName').textContent=n; $('bpName').style.color=c;
+    $('bpSub').textContent=(h?'@'+h:(bAcct==='institution'?'company':'individual'))+(tin?' · TIN '+tin:'');
+    $('brandPrev').style.borderColor=c; }
+  ['bName','bColor','bHandle','bTin'].forEach(function(id){ ['input','change'].forEach(function(ev){ $(id).addEventListener(ev,paintBrandPrev); }); });
+  $('bLogoFile').addEventListener('change',function(e){
+    var f=e.target.files&&e.target.files[0]; if(!f)return;
+    if(f.size>180000){ toast('Logo too large — keep it under ~180 KB','err'); return; }
+    var r=new FileReader(); r.onload=function(){ bLogoData=String(r.result); paintBrandPrev(); }; r.readAsDataURL(f);
+  });
+  $('bClaim').addEventListener('click',async function(){
+    var h=$('bHandle').value.trim().replace(/^@/,'').toLowerCase();
+    if(!/^[a-z0-9_]{3,30}$/.test(h)){ toast('Handle: 3–30 chars — letters, numbers, underscore','err'); return; }
+    $('bClaim').disabled=true;
+    try{
+      var r=await fetch(API+'/api/handle/'+encodeURIComponent(h));
+      if(r.ok){ var body=await r.json(); if(body&&(body.handle||body.subject)){ toast('@'+h+' is already taken','err'); return; } }
+      var b=getBrand(); b.handle=h; store('epn-brand',b); paintBrandPrev(); toast('@'+h+' saved to your identity');
+    }catch(e){ var b2=getBrand(); b2.handle=h; store('epn-brand',b2); paintBrandPrev(); toast('@'+h+' saved to your identity'); }
+    finally{ $('bClaim').disabled=false; }
+  });
+  $('bSave').addEventListener('click',function(){
+    store('epn-brand',{ name:$('bName').value.trim(), color:$('bColor').value, verify:$('bVerify').value.trim(),
+      tin:$('bTin').value.trim(), ppsr:$('bPpsr').value.trim(), address:$('bAddress').value.trim(),
+      email:$('bEmail').value.trim(), logo:bLogoData, handle:$('bHandle').value.trim().replace(/^@/,''), acct:bAcct });
+    toast('Brand & details saved');
+  });
 
   /* ── Issue ── */
   $('fIssueDate').value=today();
   (function(){ var d=new Date(); d.setDate(d.getDate()+90); $('fMaturity').value=d.toISOString().slice(0,10); })();
-  (function(){ var b=getBrand(); if(b.name) $('fMaker').value=b.name; })();
+  (function(){ var b=getBrand(); if(b.name) $('fMaker').value=b.name; if(b.tin) $('fMakerTin').value=b.tin; })();
 
   function issueErr(m){ var e=$('issueErr'); if(!m){e.style.display='none';return;} e.textContent=m; e.style.display='block'; }
 
@@ -530,7 +630,8 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     if(!(Number(amount)>0)) return issueErr('Enter a principal amount greater than zero.');
     var f={ maker:maker, maker_tin:$('fMakerTin').value.trim(), payee:payee, payee_tin:$('fPayeeTin').value.trim(),
       interest_rate:$('fRate').value.trim(), issue_date:$('fIssueDate').value, maturity_date:$('fMaturity').value,
-      place_of_issue:$('fPlace').value.trim()||'Philippines', settlement_rail:'Stellar USDC (testnet)',
+      place_of_issue:$('fPlace').value.trim()||'Philippines', purpose:$('fPurpose').value,
+      remarks:$('fMemo').value.trim(), settlement_rail:'Stellar USDC (testnet)',
       stellar_pubkey:window.STELLAR_PUBKEY||'' };
     var btn=$('issueBtn'); btn.disabled=true; btn.textContent='Issuing & signing…';
     try{
@@ -573,8 +674,8 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     if(!n) return;
     current=n; var f=n.fields, b=getBrand();
     $('dCompany').textContent=f.maker;
-    $('dLogo').textContent=initials(f.maker);
-    $('dLogo').style.background='linear-gradient(135deg,'+(b.color||'#f97316')+','+(b.color?b.color+'cc':'#c2410c')+')';
+    if(b.logo){ $('dLogo').innerHTML='<img alt="" src="'+b.logo+'">'; $('dLogo').style.background='#fff'; }
+    else { $('dLogo').textContent=initials(f.maker); $('dLogo').style.background='linear-gradient(135deg,'+(b.color||'#f97316')+','+(b.color?b.color+'cc':'#c2410c')+')'; }
     $('dPill').textContent='✓ Verified · '+(n.sandbox?'Sandbox':'Registered');
     $('dAmount').textContent=n.currency+' '+fmtAmt(n.amount);
     $('dMaker').firstChild.textContent=f.maker;
@@ -584,6 +685,9 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     $('dRate').textContent=f.interest_rate?(f.interest_rate+'%'):'Non-interest-bearing';
     $('dMaturity').textContent=fmtDate(f.maturity_date);
     $('dPlace').textContent=f.place_of_issue;
+    $('dPurpose').textContent=f.purpose||'Working Capital';
+    if(f.remarks){ $('dRemarksRow').style.display=''; $('dRemarks').textContent=f.remarks; }
+    else { $('dRemarksRow').style.display='none'; }
     $('dRef').textContent=n.id;
     $('dHolder').textContent=f.payee+(f.stellar_pubkey?' · '+trunc(f.stellar_pubkey):'');
     $('dIssuer').textContent=f.maker;
