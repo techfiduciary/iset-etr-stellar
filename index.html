@@ -99,18 +99,6 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 .icard .icard-i{color:var(--soft);display:block}
 .icard .it{font-size:13px;font-weight:600;margin-top:6px;line-height:1.25}
 .icard .is{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
-.cath{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--soft);font-weight:700;margin:16px 0 8px}
-.cath:first-of-type{margin-top:4px}
-/* Primary audience — MSMEs dominate the section */
-.cath.primary{font-size:19px;font-weight:800;letter-spacing:-.02em;text-transform:none;color:var(--ink);margin:6px 0 10px}
-.industries.primary{grid-template-columns:1fr;gap:8px}
-.industries.primary .icard{display:flex;align-items:flex-start;gap:12px;padding:14px;border-left:4px solid var(--accent)}
-.industries.primary .icard-i{font-size:24px;flex:0 0 auto}
-.industries.primary .it{font-size:15px;font-weight:800;margin-top:0}
-.industries.primary .is{font-size:12.5px;margin-top:3px}
-@media (max-width:600px){
-  .industries.primary{grid-template-columns:1fr;grid-auto-flow:row;grid-auto-columns:unset;overflow-x:visible;padding-bottom:0}
-}
 .topactions{display:flex;align-items:center;gap:8px}
 .iconbtn{background:var(--bg2);border:1px solid var(--line);color:var(--ink);width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 34px}
 .cardhero{border-radius:12px;padding:14px 16px;margin:0 0 14px;color:#fff;background:linear-gradient(140deg,var(--ha,#3b82f6),#0b1f3a 94%);box-shadow:0 8px 22px rgba(8,20,40,.35)}
@@ -258,21 +246,12 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
         <h2>Who uses the ePN?</h2>
         <p class="muted">A universal legal instrument for deferred payment — anywhere a promise to pay needs to be provable.</p>
 
-        <div class="cath primary">MSMEs &amp; Small Businesses</div>
-        <div class="industries primary">
-          <div class="icard"><span class="icard-i">🏭</span><div><div class="it">SME Suppliers &amp; Manufacturers</div><div class="is">Securing accounts receivable from large corporate buyers.</div></div></div>
-          <div class="icard"><span class="icard-i">🏪</span><div><div class="it">Micro-merchants &amp; Traders</div><div class="is">Digitizing informal trade agreements into signed, verifiable notes.</div></div></div>
-          <div class="icard"><span class="icard-i">🚢</span><div><div class="it">SME Importers &amp; Exporters</div><div class="is">Accessing cross-border trade credit both ends can verify.</div></div></div>
-        </div>
-
-        <div class="cath">Financial institutions</div>
         <div class="industries">
+          <div class="icard"><span class="icard-i">🏪</span><div class="it">Micro, Small, Medium Enterprises</div><div class="is">Digitizing informal trade agreements into signed, verifiable notes.</div></div>
+          <div class="icard"><span class="icard-i">🏭</span><div class="it">Suppliers &amp; Manufacturers</div><div class="is">Securing accounts receivable from large corporate buyers.</div></div>
+          <div class="icard"><span class="icard-i">🚢</span><div class="it">Importers &amp; Exporters</div><div class="is">Accessing cross-border trade credit both ends can verify.</div></div>
           <div class="icard"><span class="icard-i">🏦</span><div class="it">Lenders &amp; Factoring Companies</div><div class="is">Monetizing MSME trade receivables.</div></div>
           <div class="icard"><span class="icard-i">🏛️</span><div class="it">Corporate Banks</div><div class="is">Digitizing trade portfolios.</div></div>
-        </div>
-
-        <div class="cath">Independent professionals &amp; long tail</div>
-        <div class="industries">
           <div class="icard"><span class="icard-i">💼</span><div class="it">Freelancers &amp; Gig Workers</div><div class="is">Structuring client payment terms.</div></div>
           <div class="icard"><span class="icard-i">🌾</span><div class="it">Agri-Business &amp; Cooperatives</div><div class="is">Securing post-harvest payments.</div></div>
         </div>
@@ -772,6 +751,13 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
      transactions execute for real on testnet and return real hashes. */
   var RPC_URL='https://soroban-testnet.stellar.org';
   function sdk(){ return window.StellarSdk||null; }
+  async function rpcCall(method,params){
+    var r=await fetch(RPC_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({jsonrpc:'2.0',id:1,method:method,params:params})});
+    var j=await r.json();
+    if(j.error) throw new Error(j.error.message||('RPC error on '+method));
+    return j.result;
+  }
   function updateStoredNote(n){ var l=store('epn-notes')||[]; for(var i=0;i<l.length;i++) if(l[i].id===n.id){ l[i]=n; break; } store('epn-notes',l); }
   function chainMsg(html,kind){ $('chainStatus').innerHTML='<span class="'+(kind||'muted')+'" style="margin:0">'+html+'</span>'; }
   function txLink(h,label){ return '<a class="link" href="https://stellar.expert/explorer/testnet/tx/'+esc(h)+'" target="_blank" rel="noopener">'+esc(label||'View on Stellar Explorer')+' ↗</a>'; }
@@ -798,21 +784,30 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       .addOperation(contract.call.apply(contract,[fn].concat(args)))
       .setTimeout(120).build();
     onStatus&&onStatus('Simulating on Stellar…');
-    var prepared=await server.prepareTransaction(tx); // adds Soroban footprint + resource fee on top of the 100-stroop base
+    var prepared;
+    try{ prepared=await server.prepareTransaction(tx); } // adds Soroban footprint + resource fee on top of the 100-stroop base
+    catch(se){
+      var sm=(se&&se.message)||'';
+      if(/Lender not set|Maker not set/i.test(sm)) throw new Error('The escrow has no registered note yet — issue an ePN first, then settle it.');
+      if(/Access denied/i.test(sm)) throw new Error('This escrow was registered by a different wallet — issue a new note with this wallet, then settle.');
+      throw new Error('Simulation failed: '+sm.slice(0,140));
+    }
     onStatus&&onStatus('Waiting for wallet signature…');
     var signed=await window.albedo.tx({ xdr: prepared.toXDR(), network:'testnet' });
     if(!signed||!signed.signed_envelope_xdr) throw new Error('Signing cancelled');
-    var envelope=S.TransactionBuilder.fromXDR(signed.signed_envelope_xdr,S.Networks.TESTNET);
+    // Submit the signed XDR straight to Soroban RPC as raw JSON — no client-side
+    // re-parsing of the wallet's envelope (avoids XDR "bad union switch" mismatches).
     onStatus&&onStatus('Submitting to Stellar…');
-    var sent=await server.sendTransaction(envelope);
+    var sent=await rpcCall('sendTransaction',{ transaction: signed.signed_envelope_xdr });
     if(sent.status==='ERROR') throw new Error('Network rejected the transaction');
+    var hash=sent.hash;
     for(var i=0;i<20;i++){
       await new Promise(function(r){setTimeout(r,1500);});
-      var st=await server.getTransaction(sent.hash);
-      if(st.status==='SUCCESS') return sent.hash;
-      if(st.status==='FAILED') throw new Error('Transaction failed on-chain — check the explorer: '+sent.hash);
+      var st=await rpcCall('getTransaction',{ hash: hash });
+      if(st.status==='SUCCESS') return hash;
+      if(st.status==='FAILED') throw new Error('Transaction failed on-chain — check the explorer: '+hash);
     }
-    return sent.hash; // broadcast, still confirming
+    return hash; // broadcast, still confirming
   }
 
   window.initEPNOnChain = async function(note,onStatus){
