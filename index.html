@@ -11,6 +11,7 @@
 <meta property="og:image" content="/assets/eTR.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/4.1.0/index.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@albedo-link/intent@0.12.0/lib/albedo.intent.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@13.0.0/dist/stellar-sdk.min.js" defer></script>
 <script src="https://iset.finance/assets/qr.js" defer></script>
 <style>
 :root{
@@ -98,6 +99,8 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 .icard .icard-i{color:var(--soft);display:block}
 .icard .it{font-size:13px;font-weight:600;margin-top:6px;line-height:1.25}
 .icard .is{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+.cath{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--soft);font-weight:700;margin:16px 0 8px}
+.cath:first-of-type{margin-top:4px}
 .topactions{display:flex;align-items:center;gap:8px}
 .iconbtn{background:var(--bg2);border:1px solid var(--line);color:var(--ink);width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 34px}
 .cardhero{border-radius:12px;padding:14px 16px;margin:0 0 14px;color:#fff;background:linear-gradient(140deg,var(--ha,#3b82f6),#0b1f3a 94%);box-shadow:0 8px 22px rgba(8,20,40,.35)}
@@ -242,13 +245,25 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       </div>
 
       <div class="block">
-        <h2>Who uses it</h2>
-        <p class="muted">Anywhere a promise to pay needs to be provable.</p>
+        <h2>Who uses the ePN?</h2>
+        <p class="muted">A universal legal instrument for deferred payment — anywhere a promise to pay needs to be provable.</p>
+
+        <div class="cath">Supply chain &amp; trade</div>
         <div class="industries">
-          <div class="icard"><span class="icard-i">🏦</span><div class="it">Lenders</div><div class="is">Consumer and business credit as controllable, transferable notes.</div></div>
-          <div class="icard"><span class="icard-i">🏪</span><div class="it">Small businesses</div><div class="is">Turn a payment promise into a financeable instrument.</div></div>
-          <div class="icard"><span class="icard-i">🚢</span><div class="it">Traders</div><div class="is">Cross-border obligations that both ends can verify.</div></div>
-          <div class="icard"><span class="icard-i">🏭</span><div class="it">Suppliers</div><div class="is">Get paid on terms — with a note that holds up.</div></div>
+          <div class="icard"><span class="icard-i">🏭</span><div class="it">Suppliers &amp; Manufacturers</div><div class="is">Securing accounts receivable — deliver now, hold a note that holds up.</div></div>
+          <div class="icard"><span class="icard-i">🚢</span><div class="it">Importers &amp; Exporters</div><div class="is">Cross-border trade credit both ends can verify.</div></div>
+        </div>
+
+        <div class="cath">Financial institutions</div>
+        <div class="industries">
+          <div class="icard"><span class="icard-i">🏦</span><div class="it">Lenders &amp; Factoring Companies</div><div class="is">Monetizing trade receivables against a controllable instrument.</div></div>
+          <div class="icard"><span class="icard-i">🏛️</span><div class="it">Corporate Banks</div><div class="is">Digitizing trade portfolios — one registry, verifiable notes.</div></div>
+        </div>
+
+        <div class="cath">The long-tail economy</div>
+        <div class="industries">
+          <div class="icard"><span class="icard-i">💼</span><div class="it">Freelancers &amp; Independent Professionals</div><div class="is">Structuring client payment terms as a signed note.</div></div>
+          <div class="icard"><span class="icard-i">🌾</span><div class="it">Agri-Business &amp; Cooperatives</div><div class="is">Securing post-harvest payments for growers and co-ops.</div></div>
         </div>
       </div>
 
@@ -393,6 +408,10 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
         <button class="btn ghost" onclick="window.print()">Print / PDF</button>
         <a class="btn" id="openVerifyBtn" href="#">Verify</a>
       </div>
+      <div class="actions no-print" style="margin-top:0">
+        <button class="btn" id="settleBtn">Endorse &amp; Settle on Stellar</button>
+      </div>
+      <div id="chainStatus" class="no-print" style="font-size:13px;line-height:1.6;margin:4px 2px 10px"></div>
     </section>
 
     <!-- ── VERIFY ── -->
@@ -435,18 +454,25 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
         </div>
         <p class="note" style="margin-top:6px">A company handle is its own identity, separate from your personal one. This is a friendly handle — not the authoritative fID rail.</p>
 
-        <label class="lbl">Business / your name</label>
-        <input class="input" id="bName" placeholder="Dela Cruz Trading">
+        <label class="lbl" id="lblBName">Your name</label>
+        <input class="input" id="bName" placeholder="Juan Dela Cruz">
 
-        <label class="lbl">Tax ID / TIN (for valid notes)</label>
+        <label class="lbl" id="lblBTin">Tax ID / TIN (for valid notes)</label>
         <input class="input" id="bTin" placeholder="000-000-000-000">
 
-        <label class="lbl">PPSR Individual ID</label>
-        <input class="input" id="bPpsr" placeholder="2026-292369" title="Log in at PPSR → top-right Settings icon → My Account to find your PPSR Individual ID">
-        <p class="note" style="margin-top:4px">Used to perfect an assignment (RA 11057). Find it at PPSR → Settings (top-right) → My Account.
-          <a class="link" href="https://portal.ppsr.lra.gov.ph/account/register?type=Individual" target="_blank" rel="noopener">Register a PPSR Individual ID ↗</a></p>
+        <div id="coFields" style="display:none">
+          <label class="lbl">SEC / DTI registration no.</label>
+          <input class="input" id="bSec" placeholder="CS20xx-xxxxx or DTI cert no.">
+          <label class="lbl">Authorized representative</label>
+          <input class="input" id="bRep" placeholder="Name of the signing officer">
+        </div>
 
-        <label class="lbl">Business address</label>
+        <label class="lbl" id="lblBPpsr">PPSR Individual ID</label>
+        <input class="input" id="bPpsr" placeholder="2026-292369" title="Log in at PPSR → top-right Settings icon → My Account to find your PPSR ID">
+        <p class="note" style="margin-top:4px" id="ppsrNote">Used to perfect an assignment (RA 11057). Find it at PPSR → Settings (top-right) → My Account.
+          <a class="link" id="ppsrLink" href="https://portal.ppsr.lra.gov.ph/account/register?type=Individual" target="_blank" rel="noopener">Register a PPSR ID ↗</a></p>
+
+        <label class="lbl" id="lblBAddress">Address</label>
         <input class="input" id="bAddress" placeholder="Street, City, Country">
         <label class="lbl">Contact email</label>
         <input class="input" id="bEmail" type="email" placeholder="you@business.com">
@@ -578,9 +604,21 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   function loadBrandForm(){ var b=getBrand();
     $('bName').value=b.name||''; $('bColor').value=b.color||'#2456C8'; $('bVerify').value=b.verify||'';
     $('bTin').value=b.tin||''; $('bPpsr').value=b.ppsr||''; $('bAddress').value=b.address||''; $('bEmail').value=b.email||'';
+    $('bSec').value=b.sec||''; $('bRep').value=b.rep||'';
     $('bHandle').value=b.handle||''; bLogoData=b.logo||null; bAcct=(b.acct==='institution')?'institution':'individual';
     segPaint(); paintBrandPrev(); }
-  function segPaint(){ $('segInd').classList.toggle('on',bAcct==='individual'); $('segCo').classList.toggle('on',bAcct==='institution'); }
+  function segPaint(){
+    var co = bAcct==='institution';
+    $('segInd').classList.toggle('on',!co); $('segCo').classList.toggle('on',co);
+    // The form genuinely changes shape per account type:
+    $('coFields').style.display = co ? '' : 'none';
+    $('lblBName').textContent   = co ? 'Company name' : 'Your name';
+    $('bName').placeholder      = co ? 'Dela Cruz Trading, Inc.' : 'Juan Dela Cruz';
+    $('lblBTin').textContent    = co ? 'Company TIN (for valid notes)' : 'Tax ID / TIN (for valid notes)';
+    $('lblBPpsr').textContent   = co ? 'PPSR ID (company account)' : 'PPSR Individual ID';
+    $('ppsrLink').href          = co ? 'https://portal.ppsr.lra.gov.ph/account/register' : 'https://portal.ppsr.lra.gov.ph/account/register?type=Individual';
+    $('lblBAddress').textContent= co ? 'Business address' : 'Address';
+  }
   $('segInd').addEventListener('click',function(){ bAcct='individual'; segPaint(); paintBrandPrev(); });
   $('segCo').addEventListener('click',function(){ bAcct='institution'; segPaint(); paintBrandPrev(); });
   function paintBrandPrev(){
@@ -610,7 +648,8 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   $('bSave').addEventListener('click',function(){
     store('epn-brand',{ name:$('bName').value.trim(), color:$('bColor').value, verify:$('bVerify').value.trim(),
       tin:$('bTin').value.trim(), ppsr:$('bPpsr').value.trim(), address:$('bAddress').value.trim(),
-      email:$('bEmail').value.trim(), logo:bLogoData, handle:$('bHandle').value.trim().replace(/^@/,''), acct:bAcct });
+      email:$('bEmail').value.trim(), sec:$('bSec').value.trim(), rep:$('bRep').value.trim(),
+      logo:bLogoData, handle:$('bHandle').value.trim().replace(/^@/,''), acct:bAcct });
     toast('Brand & details saved');
   });
 
@@ -648,6 +687,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       var list=store('epn-notes')||[]; list.unshift(rec); store('epn-notes',list.slice(0,50));
       toast('ePN issued & signed');
       openNote(rec);
+      anchorOnIssue(rec);
     }catch(e){ issueErr('Issuance failed: '+(e&&e.message?e.message:'network error')+' — try again in a moment.'); toast('Issuance failed','err'); }
     finally{ btn.disabled=false; btn.textContent='Issue ePN — signed & registered'; }
   });
@@ -700,6 +740,10 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       '<b>Record hash:</b> '+esc(n.record_hash||'')+'<br>Registry record, verifiable by reference'+
       (f.stellar_pubkey?' · bound to Stellar '+esc(trunc(f.stellar_pubkey)):'')+'.';
     try{ if(window.QR&&window.QR.svg) $('qrBox').innerHTML=window.QR.svg(verifyUrl(n.id)); }catch(e){}
+    var sb=$('settleBtn'); sb.disabled=false;
+    if(n.settle_tx){ sb.textContent='Settled ✓'; sb.disabled=true; chainMsg('✓ <b>ePN Settled on Stellar!</b> · '+txLink(n.settle_tx,'View on Stellar Explorer'),'ok'); }
+    else if(n.init_tx){ sb.textContent='Endorse & Settle on Stellar'; chainMsg('✓ Registered on Stellar · '+txLink(n.init_tx),'ok'); }
+    else { sb.textContent='Endorse & Settle on Stellar'; chainMsg(''); }
     show('note');
   }
   $('dVerifyBtn').addEventListener('click',function(ev){ ev.preventDefault(); if(current){ $('vId').value=current.id; show('verify'); runVerify(current.id); } });
@@ -708,6 +752,95 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     if(!current)return; var url=verifyUrl(current.id);
     try{ if(navigator.share) await navigator.share({title:'ePN '+current.id,text:'ePN — '+current.currency+' '+fmtAmt(current.amount)+', maturing '+fmtDate(current.fields.maturity_date)+'. View & verify:',url:url});
       else{ await navigator.clipboard.writeText(url); toast('Note link copied'); } }catch(e){}
+  });
+
+  /* ── Stellar on-chain (Soroban) ─────────────────────────────────────────────
+     Contract: epn_escrow — init(maker, lender, amount i128, maturity u64, iset_pubkey Bytes32)
+               release_funds(caller, iset_signature Bytes64)  [caller must equal lender + sign]
+     Demo model: the connected wallet acts as BOTH maker and lender, so both
+     transactions execute for real on testnet and return real hashes. */
+  var RPC_URL='https://soroban-testnet.stellar.org';
+  function sdk(){ return window.StellarSdk||null; }
+  function updateStoredNote(n){ var l=store('epn-notes')||[]; for(var i=0;i<l.length;i++) if(l[i].id===n.id){ l[i]=n; break; } store('epn-notes',l); }
+  function chainMsg(html,kind){ $('chainStatus').innerHTML='<span class="'+(kind||'muted')+'" style="margin:0">'+html+'</span>'; }
+  function txLink(h,label){ return '<a class="link" href="https://stellar.expert/explorer/testnet/tx/'+esc(h)+'" target="_blank" rel="noopener">'+esc(label||'View on Stellar Explorer')+' ↗</a>'; }
+
+  async function invokeContract(fn,args,onStatus){
+    var S=sdk(); if(!S) throw new Error('Stellar SDK still loading — try again in a few seconds');
+    if(!window.STELLAR_PUBKEY) throw new Error('Connect your Stellar wallet first (top right)');
+    if(!(window.albedo&&window.albedo.tx)) throw new Error('Albedo wallet library unavailable');
+    var RpcNS=(S.rpc&&S.rpc.Server)?S.rpc:S.SorobanRpc;
+    if(!RpcNS) throw new Error('This SDK build has no Soroban RPC');
+    var server=new RpcNS.Server(RPC_URL);
+    var acct;
+    try{ acct=await server.getAccount(window.STELLAR_PUBKEY); }
+    catch(e){ throw new Error('Account not funded on testnet — get free XLM at friendbot.stellar.org?addr='+window.STELLAR_PUBKEY); }
+    var contract=new S.Contract(window.SOROBAN_CONTRACT_ID);
+    var tx=new S.TransactionBuilder(acct,{fee:'100',networkPassphrase:S.Networks.TESTNET})
+      .addOperation(contract.call.apply(contract,[fn].concat(args)))
+      .setTimeout(120).build();
+    onStatus&&onStatus('Simulating on Stellar…');
+    var prepared=await server.prepareTransaction(tx); // adds Soroban footprint + resource fee on top of the 100-stroop base
+    onStatus&&onStatus('Waiting for wallet signature…');
+    var signed=await window.albedo.tx({ xdr: prepared.toXDR(), network:'testnet' });
+    if(!signed||!signed.signed_envelope_xdr) throw new Error('Signing cancelled');
+    var envelope=S.TransactionBuilder.fromXDR(signed.signed_envelope_xdr,S.Networks.TESTNET);
+    onStatus&&onStatus('Submitting to Stellar…');
+    var sent=await server.sendTransaction(envelope);
+    if(sent.status==='ERROR') throw new Error('Network rejected the transaction');
+    for(var i=0;i<20;i++){
+      await new Promise(function(r){setTimeout(r,1500);});
+      var st=await server.getTransaction(sent.hash);
+      if(st.status==='SUCCESS') return sent.hash;
+      if(st.status==='FAILED') throw new Error('Transaction failed on-chain — check the explorer: '+sent.hash);
+    }
+    return sent.hash; // broadcast, still confirming
+  }
+
+  window.initEPNOnChain = async function(note,onStatus){
+    var S=sdk(), me=window.STELLAR_PUBKEY;
+    var args=[
+      S.Address.fromString(me).toScVal(),                                   // maker  = connected wallet (require_auth)
+      S.Address.fromString(me).toScVal(),                                   // lender = connected wallet (demo lender, lets settle run for real)
+      S.nativeToScVal(BigInt(Math.round(note.amount)),{type:'i128'}),       // amount
+      S.nativeToScVal(BigInt(Math.floor(Date.now()/1000)+7776000),{type:'u64'}), // maturity: +90 days
+      S.nativeToScVal(new Uint8Array(32),{type:'bytes'})                    // iset_pubkey: 32-byte placeholder
+    ];
+    return invokeContract('init',args,onStatus);
+  };
+
+  window.settleEPNOnChain = async function(onStatus){
+    var S=sdk(), me=window.STELLAR_PUBKEY;
+    var args=[
+      S.Address.fromString(me).toScVal(),                 // caller = the demo lender registered at init
+      S.nativeToScVal(new Uint8Array(64),{type:'bytes'})  // iset_signature: 64-byte placeholder (unused by contract)
+    ];
+    return invokeContract('release_funds',args,onStatus);
+  };
+
+  function anchorOnIssue(rec){
+    if(!window.STELLAR_PUBKEY){ chainMsg('Connect your Stellar wallet to register this note on-chain.'); return; }
+    chainMsg('Registering the note on Stellar…');
+    window.initEPNOnChain(rec,chainMsg).then(function(h){
+      rec.init_tx=h; current=rec; updateStoredNote(rec);
+      chainMsg('✓ Registered on Stellar · '+txLink(h),'ok'); toast('Registered on Stellar');
+    }).catch(function(e){ chainMsg('On-chain registration skipped — '+esc(e.message||'error'),'err'); });
+  }
+
+  $('settleBtn').addEventListener('click',async function(){
+    var b=$('settleBtn'), old=b.textContent;
+    b.disabled=true; b.textContent='Submitting to Stellar...';
+    try{
+      var h=await window.settleEPNOnChain(chainMsg);
+      if(current){ current.settle_tx=h; updateStoredNote(current); }
+      chainMsg('✓ <b>ePN Settled on Stellar!</b> · '+txLink(h,'View on Stellar Explorer'),'ok');
+      b.textContent='Settled ✓';
+      toast('ePN settled on Stellar');
+    }catch(e){
+      chainMsg('Settlement failed — '+esc(e.message||'error'),'err');
+      b.textContent=old; b.disabled=false; return;
+    }
+    b.disabled=false;
   });
 
   /* ── Verify ── */
