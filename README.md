@@ -85,7 +85,7 @@ ISET operates a live production registry at [iset.finance](https://iset.finance)
 - **Settlement Router architecture** — the legal state of the record (who controls it, under UNCITRAL MLETR's single-controller model) lives off-chain in the ISET registry; the **settlement state** lives on-chain. Decoupling the two means institutions keep commercial privacy while Stellar provides instant, cheap, final settlement in USDC
 - **Post-quantum security** — every record is signed with **ML-DSA-65 (NIST FIPS 204)** and anchored to a hash-chained audit ledger, future-proof against quantum threats
 - **Privacy-first by design** — commercial terms never touch the chain (Data Privacy Act-aligned); the blockchain holds only the settlement state
-- **Legal structure, not legal cosplay** — records are structured to **RA 8792** (PH E-Commerce Act) and aligned to **UNCITRAL MLETR**, with instrument-specific framing under the Negotiable Instruments Law (Act 2031), UCP 600/ISP98 (eLC), and RA 11057/PPSR (receivables perfection)
+- **Legal structure** — records are structured to **RA 8792** (PH E-Commerce Act) and aligned to **UNCITRAL MLETR**, with instrument-specific framing under the Negotiable Instruments Law (Act 2031), UCP 600/ISP98 (eLC), and RA 11057/PPSR (receivables perfection)
 
 ### Why Stellar
 
