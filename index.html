@@ -826,8 +826,9 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   /* ── Stellar on-chain (Soroban) ─────────────────────────────────────────────
      Contract: epn_escrow — init(maker, lender, amount i128, maturity u64, iset_pubkey Bytes32)
                release_funds(caller, iset_signature Bytes64)  [caller must equal lender + sign]
-     Demo model: the connected wallet acts as BOTH maker and lender, so both
-     transactions execute for real on testnet and return real hashes. */
+     Single-wallet flow: the connected wallet is registered as both maker and
+     lender at init, so one reviewer can execute the full issue → endorse →
+     settle lifecycle end-to-end on either network with real transactions. */
   function sdk(){ return window.StellarSdk||null; }
   async function rpcCall(method,params){
     var r=await fetch(RPC_URL,{method:'POST',headers:{'Content-Type':'application/json'},
@@ -869,8 +870,11 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     try{ prepared=await server.prepareTransaction(tx); } // adds Soroban footprint + resource fee on top of the 100-stroop base
     catch(se){
       var sm=(se&&se.message)||'';
-      if(/Lender not set|Maker not set/i.test(sm)) throw new Error('The escrow has no registered note yet — issue an ePN first, then settle it.');
-      if(/Access denied/i.test(sm)) throw new Error('This escrow was registered by a different wallet — issue a new note with this wallet, then settle.');
+      // Map the contract's typed errors (see contracts/epn_escrow: Error enum) to plain English.
+      if(/#2\b|NotInitialized/i.test(sm)) throw new Error('The escrow has no registered note yet — issue an ePN first, then settle it.');
+      if(/#3\b|NotActive/i.test(sm)) throw new Error('This note is already settled or defaulted — issue a new ePN to run the flow again.');
+      if(/#4\b|Unauthorized/i.test(sm)) throw new Error('This escrow was registered by a different wallet — issue a new note with this wallet, then settle.');
+      if(/#5\b|NotMatured/i.test(sm)) throw new Error('The note has not reached maturity yet.');
       throw new Error('Simulation failed: '+sm.slice(0,140));
     }
     onStatus&&onStatus('Waiting for wallet signature…');

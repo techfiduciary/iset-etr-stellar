@@ -1,0 +1,36 @@
+name: contract
+
+on:
+  push:
+    branches: [main]
+    paths: ["contracts/**", ".github/workflows/contract.yml"]
+  pull_request:
+    paths: ["contracts/**"]
+
+defaults:
+  run:
+    working-directory: contracts/epn_escrow
+
+jobs:
+  test:
+    name: cargo test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts/epn_escrow
+      - run: cargo test --locked
+      - run: cargo fmt --all --check
+
+  build:
+    name: wasm build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts/epn_escrow
+      - run: rustup target add wasm32v1-none
+      - run: cargo build --target wasm32v1-none --release --locked
+      - run: ls -la target/wasm32v1-none/release/epn_escrow.wasm
