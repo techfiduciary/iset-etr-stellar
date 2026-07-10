@@ -1,4 +1,4 @@
-# ISET eTR on Stellar — ePN
+# ISET eTR
 
 **Electronic Promissory Notes — issued as legally-structured digital records, post-quantum signed, settling in Stellar USDC.**
 
