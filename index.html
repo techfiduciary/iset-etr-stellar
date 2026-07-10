@@ -1,4 +1,17 @@
 <!DOCTYPE html>
+<!--
+  ISET eTR on Stellar — Electronic Transferable Records (ePN)
+  https://stellar.iset.finance · https://github.com/techfiduciary/iset-etr-stellar
+
+  Single-file static app, no framework, no build step.
+    · Registry: legal state + ML-DSA-65 signing via the production ISET engine
+      (iset.finance, sandbox scope — records are signed & verifiable, no legal effect)
+    · On-chain: epn_escrow Soroban contract (init / release_funds), Stellar
+      mainnet CBCKBID6…KWEH + testnet CA66QGKV…E3KV; wallets: Freighter + Albedo
+    · Views: Home · Issue · Notes · Verify · Brand — state in localStorage
+
+  © 2026 ISET eTR · MIT License
+-->
 <html lang="en" data-theme="dark"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>eTransferable Records · by ISET on Stellar</title>
@@ -37,7 +50,13 @@ body{background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI Variable","Se
 .logo{border-radius:7px;display:block}
 .brand .mark{font-weight:800;letter-spacing:.06em}
 .brand .sub{font-size:11px;color:var(--muted)}
-.banner{background:#3a2a0e;border:1px solid #6b4e15;color:#f6d98a;border-radius:10px;padding:7px 10px;font-size:12px;text-align:center;margin-bottom:10px}
+.banner{background:#3a2a0e;border:1px solid #6b4e15;color:#f6d98a;border-radius:10px;padding:7px 10px;font-size:12px;text-align:center;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.netswitch{display:inline-flex;border:1px solid #6b4e15;border-radius:999px;overflow:hidden;flex:0 0 auto}
+.netswitch button{background:transparent;border:0;color:#f6d98a;font-size:11px;font-weight:700;padding:3px 10px;cursor:pointer;line-height:1.4}
+.netswitch button.on{background:#f6d98a;color:#3a2a0e}
+html[data-theme="light"] .netswitch{border-color:#e3c878}
+html[data-theme="light"] .netswitch button{color:#7a5a12}
+html[data-theme="light"] .netswitch button.on{background:#7a5a12;color:#fdf3d6}
 .tabs{display:flex;gap:6px;margin:6px 0 14px}
 .tabs button{flex:1;background:var(--bg2);color:var(--muted);border:1px solid var(--line);padding:9px;border-radius:10px;font-weight:600;cursor:pointer}
 .tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -207,7 +226,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     </div>
   </header>
 
-  <div class="banner">Stellar testnet · notes are sandbox — fully signed &amp; verifiable, no legal effect.</div>
+  <div class="banner"><span id="bannerText">Stellar testnet · notes are sandbox — fully signed &amp; verifiable, no legal effect.</span><span class="netswitch" id="netSwitch" role="group" aria-label="Network"><button type="button" data-net="testnet">Testnet</button><button type="button" data-net="mainnet">Mainnet</button></span></div>
 
   <nav class="tabs" id="tabs">
     <button data-tab="home" class="on">Home</button>
@@ -569,23 +588,23 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   $('brandBtn').addEventListener('click',function(){ show('brand'); loadBrandForm(); });
   $('backBtn').addEventListener('click',function(){ show('notes'); renderNotes(); });
 
-  /* ── Network switcher ── */
+  /* ── Network switcher (banner toggle + Home segment share one handler) ── */
   function paintNet(){
-    document.querySelectorAll('#netSeg button').forEach(function(b){ b.classList.toggle('on',b.dataset.net===NET); });
+    document.querySelectorAll('#netSeg button, #netSwitch button').forEach(function(b){ b.classList.toggle('on',b.dataset.net===NET); });
     $('netNote').innerHTML = (NET==='mainnet')
       ? 'Mainnet is live. Issuing and settling here submit <b>real transactions</b> and spend real XLM from your wallet.'
       : 'Testnet is free — accounts are auto-funded, and nothing costs real money. Switch to mainnet to transact for real.';
-    var bn=document.querySelector('.banner');
-    if(bn) bn.innerHTML = (NET==='mainnet')
-      ? 'Stellar mainnet · notes are sandbox records — fully signed &amp; verifiable, no legal effect.'
-      : 'Stellar testnet · notes are sandbox — fully signed &amp; verifiable, no legal effect.';
+    $('bannerText').innerHTML = (NET==='mainnet')
+      ? 'Stellar <b>mainnet</b> · real transactions · records stay sandbox — no legal effect.'
+      : 'Stellar testnet · free &amp; auto-funded · records are sandbox — no legal effect.';
   }
-  document.querySelectorAll('#netSeg button').forEach(function(b){
-    b.addEventListener('click',function(){
-      var want=b.dataset.net; if(want===NET) return;
-      if(want==='mainnet' && !confirm('Switch to Stellar mainnet?\n\nIssuing and settling will submit real transactions and spend real XLM from your connected wallet.')) return;
-      store('epn-net',want); location.search='?net='+want;
-    });
+  function switchNet(want){
+    if(want===NET) return;
+    if(want==='mainnet' && !confirm('Switch to Stellar mainnet?\n\nIssuing and settling will submit real transactions and spend real XLM from your connected wallet.')) return;
+    store('epn-net',want); location.search='?net='+want;
+  }
+  document.querySelectorAll('#netSeg button, #netSwitch button').forEach(function(b){
+    b.addEventListener('click',function(){ switchNet(b.dataset.net); });
   });
   paintNet();
 
