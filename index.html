@@ -131,6 +131,8 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 .contractbox{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px}
 .contractbox img{width:30px;height:30px;border-radius:7px;background:#fff;padding:3px;flex:0 0 30px}
 .contractbox b{font-size:13px;display:block}
+.contractbox+.contractbox{margin-top:8px}
+.livedot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-left:5px;vertical-align:middle}
 .contractbox code{font-family:ui-monospace,monospace;font-size:10px;word-break:break-all;color:var(--muted)}
 @media (max-width:600px){
   .industries{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:72%;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:8px;scrollbar-width:none}
@@ -259,15 +261,32 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 
       <div class="block">
         <h2>On-chain</h2>
-        <p class="muted">The settlement contract lives on Stellar testnet (Soroban).</p>
+        <p class="muted">The ePN escrow contract is deployed on Stellar (Soroban), live on mainnet.</p>
+
         <div class="contractbox">
           <img src="/assets/stellar.png" alt="Stellar">
           <div>
-            <b>ePN escrow · Soroban contract</b>
+            <b>ePN escrow · Mainnet <span class="livedot"></span></b>
+            <code>CBCKBID6DS4MAOSUAUHAQQ7HMD4ONJQD7WA4HPSWZSAVXUVM7LRQKWEH</code><br>
+            <a class="link small" href="https://stellar.expert/explorer/public/contract/CBCKBID6DS4MAOSUAUHAQQ7HMD4ONJQD7WA4HPSWZSAVXUVM7LRQKWEH" target="_blank" rel="noopener">View on Stellar Expert →</a>
+          </div>
+        </div>
+
+        <div class="contractbox">
+          <img src="/assets/stellar.png" alt="Stellar">
+          <div>
+            <b>ePN escrow · Testnet</b>
             <code>CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV</code><br>
             <a class="link small" href="https://stellar.expert/explorer/testnet/contract/CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV" target="_blank" rel="noopener">View on Stellar Expert →</a>
           </div>
         </div>
+
+        <label class="lbl">Network for issuing &amp; settling</label>
+        <div class="seg" id="netSeg">
+          <button type="button" data-net="testnet">Testnet</button>
+          <button type="button" data-net="mainnet">Mainnet</button>
+        </div>
+        <p class="note" id="netNote"></p>
       </div>
     </section>
 
@@ -499,7 +518,27 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   'use strict';
   var API = 'https://iset.finance';
   window.STELLAR_PUBKEY = null;
-  window.SOROBAN_CONTRACT_ID = 'CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV';
+
+  /* Network config. Mainnet is the production deployment of epn_escrow; testnet is
+     the free interactive demo (friendbot-funded). Choice persists per device. */
+  var NETWORKS={
+    testnet:{ label:'Testnet', contract:'CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV',
+      rpc:'https://soroban-testnet.stellar.org', passphrase:'Test SDF Network ; September 2015',
+      albedo:'testnet', expert:'testnet', friendbot:true },
+    mainnet:{ label:'Mainnet', contract:'CBCKBID6DS4MAOSUAUHAQQ7HMD4ONJQD7WA4HPSWZSAVXUVM7LRQKWEH',
+      rpc:'https://mainnet.sorobanrpc.com', passphrase:'Public Global Stellar Network ; September 2015',
+      albedo:'public', expert:'public', friendbot:false }
+  };
+  function readNet(){
+    var q=new URLSearchParams(location.search).get('net');
+    if(q==='mainnet'||q==='testnet') return q;
+    try{ var s=JSON.parse(localStorage.getItem('epn-net')||'null'); if(s==='mainnet'||s==='testnet') return s; }catch(e){}
+    return 'testnet';
+  }
+  var NET=readNet();
+  var CFG=NETWORKS[NET];
+  var RPC_URL=CFG.rpc;
+  window.SOROBAN_CONTRACT_ID=CFG.contract;
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -529,6 +568,26 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   document.querySelectorAll('[data-go]').forEach(function(b){ b.addEventListener('click',function(){ var v=b.dataset.go; show(v); if(v==='notes')renderNotes(); }); });
   $('brandBtn').addEventListener('click',function(){ show('brand'); loadBrandForm(); });
   $('backBtn').addEventListener('click',function(){ show('notes'); renderNotes(); });
+
+  /* ── Network switcher ── */
+  function paintNet(){
+    document.querySelectorAll('#netSeg button').forEach(function(b){ b.classList.toggle('on',b.dataset.net===NET); });
+    $('netNote').innerHTML = (NET==='mainnet')
+      ? 'Mainnet is live. Issuing and settling here submit <b>real transactions</b> and spend real XLM from your wallet.'
+      : 'Testnet is free — accounts are auto-funded, and nothing costs real money. Switch to mainnet to transact for real.';
+    var bn=document.querySelector('.banner');
+    if(bn) bn.innerHTML = (NET==='mainnet')
+      ? 'Stellar mainnet · notes are sandbox records — fully signed &amp; verifiable, no legal effect.'
+      : 'Stellar testnet · notes are sandbox — fully signed &amp; verifiable, no legal effect.';
+  }
+  document.querySelectorAll('#netSeg button').forEach(function(b){
+    b.addEventListener('click',function(){
+      var want=b.dataset.net; if(want===NET) return;
+      if(want==='mainnet' && !confirm('Switch to Stellar mainnet?\n\nIssuing and settling will submit real transactions and spend real XLM from your connected wallet.')) return;
+      store('epn-net',want); location.search='?net='+want;
+    });
+  });
+  paintNet();
 
   /* ── Rotating hero line ── */
   var LINES=['The note is the asset.','A promise that holds up.','Signed. Registered. Verifiable.','Settles in Stellar USDC.'];
@@ -749,20 +808,6 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
                release_funds(caller, iset_signature Bytes64)  [caller must equal lender + sign]
      Demo model: the connected wallet acts as BOTH maker and lender, so both
      transactions execute for real on testnet and return real hashes. */
-  /* Network config — testnet is the interactive demo (free, friendbot-funded);
-     mainnet is the production deployment. Switch with ?net=mainnet */
-  var NETWORKS={
-    testnet:{ label:'Testnet', contract:'CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV',
-      rpc:'https://soroban-testnet.stellar.org', passphrase:'Test SDF Network ; September 2015',
-      albedo:'testnet', expert:'testnet', friendbot:true },
-    mainnet:{ label:'Mainnet', contract:'',
-      rpc:'https://mainnet.sorobanrpc.com', passphrase:'Public Global Stellar Network ; September 2015',
-      albedo:'public', expert:'public', friendbot:false }
-  };
-  var NET=(new URLSearchParams(location.search).get('net')==='mainnet'&&NETWORKS.mainnet.contract)?'mainnet':'testnet';
-  var CFG=NETWORKS[NET];
-  var RPC_URL=CFG.rpc;
-  window.SOROBAN_CONTRACT_ID=CFG.contract;
   function sdk(){ return window.StellarSdk||null; }
   async function rpcCall(method,params){
     var r=await fetch(RPC_URL,{method:'POST',headers:{'Content-Type':'application/json'},
@@ -773,7 +818,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   }
   function updateStoredNote(n){ var l=store('epn-notes')||[]; for(var i=0;i<l.length;i++) if(l[i].id===n.id){ l[i]=n; break; } store('epn-notes',l); }
   function chainMsg(html,kind){ $('chainStatus').innerHTML='<span class="'+(kind||'muted')+'" style="margin:0">'+html+'</span>'; }
-  function txLink(h,label){ return '<a class="link" href="https://stellar.expert/explorer/testnet/tx/'+esc(h)+'" target="_blank" rel="noopener">'+esc(label||'View on Stellar Explorer')+' ↗</a>'; }
+  function txLink(h,label){ return '<a class="link" href="https://stellar.expert/explorer/'+CFG.expert+'/tx/'+esc(h)+'" target="_blank" rel="noopener">'+esc(label||'View on Stellar Explorer')+' ↗</a>'; }
 
   async function invokeContract(fn,args,onStatus){
     var S=sdk(); if(!S) throw new Error('Stellar SDK still loading — try again in a few seconds');
@@ -785,6 +830,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     var acct;
     try{ acct=await server.getAccount(window.STELLAR_PUBKEY); }
     catch(e){
+      if(!CFG.friendbot) throw new Error('This wallet has no account on Stellar mainnet — fund it with XLM first.');
       // New testnet account — fund it automatically via friendbot, then retry once.
       onStatus&&onStatus('Funding testnet account (friendbot)…');
       try{
@@ -793,7 +839,9 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       }catch(e2){ throw new Error('Account not funded on testnet — get free XLM at friendbot.stellar.org?addr='+window.STELLAR_PUBKEY); }
     }
     var contract=new S.Contract(window.SOROBAN_CONTRACT_ID);
-    var tx=new S.TransactionBuilder(acct,{fee:'100',networkPassphrase:S.Networks.TESTNET})
+    // Inclusion-fee buffer: simulation's minResourceFee is a lower bound — a bare
+    // 100-stroop base can land 1 stroop short and bounce as txINSUFFICIENT_FEE.
+    var tx=new S.TransactionBuilder(acct,{fee:'100000',networkPassphrase:CFG.passphrase})
       .addOperation(contract.call.apply(contract,[fn].concat(args)))
       .setTimeout(120).build();
     onStatus&&onStatus('Simulating on Stellar…');
@@ -806,7 +854,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       throw new Error('Simulation failed: '+sm.slice(0,140));
     }
     onStatus&&onStatus('Waiting for wallet signature…');
-    var signed=await window.albedo.tx({ xdr: prepared.toXDR(), network:'testnet' });
+    var signed=await window.albedo.tx({ xdr: prepared.toXDR(), network:CFG.albedo });
     if(!signed||!signed.signed_envelope_xdr) throw new Error('Signing cancelled');
     // Submit the signed XDR straight to Soroban RPC as raw JSON — no client-side
     // re-parsing of the wallet's envelope (avoids XDR "bad union switch" mismatches).
