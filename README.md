@@ -1,6 +1,6 @@
 # ISET eTR
 
-**Electronic Promissory Notes — issued as legally-structured digital records, post-quantum signed, settling in Stellar USDC.**
+**Electronic Promissory Notes — issued as legally-structured digital records, post-quantum signed, settling in Stellar USDC. ePN is an instrument under ISET's Electronic Transferable Records**
 
 Live: **https://stellar.iset.finance** · Registry & signing engine: [iset.finance](https://iset.finance)
 
