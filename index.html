@@ -7,7 +7,7 @@
     · Registry: legal state + ML-DSA-65 signing via the production ISET engine
       (iset.finance, sandbox scope — records are signed & verifiable, no legal effect)
     · On-chain: epn_escrow Soroban contract (init / release_funds), Stellar
-      mainnet CBCKBID6…KWEH + testnet CA66QGKV…E3KV; wallets: Freighter + Albedo
+      mainnet CBDFHJ2V…LL7O + testnet CDTZDPLI…XEGH; wallets: Freighter + Albedo
     · Views: Home · Issue · Notes · Verify · Brand — state in localStorage
 
   © 2026 ISET eTR · MIT License
@@ -286,8 +286,8 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
           <img src="/assets/stellar.png" alt="Stellar">
           <div>
             <b>ePN escrow · Mainnet <span class="livedot"></span></b>
-            <code>CBCKBID6DS4MAOSUAUHAQQ7HMD4ONJQD7WA4HPSWZSAVXUVM7LRQKWEH</code><br>
-            <a class="link small" href="https://stellar.expert/explorer/public/contract/CBCKBID6DS4MAOSUAUHAQQ7HMD4ONJQD7WA4HPSWZSAVXUVM7LRQKWEH" target="_blank" rel="noopener">View on Stellar Expert →</a>
+            <code>CBDFHJ2V7YBQGF4PNDPTKAALHIE6PYRBL6PVAGMJA5OFFEUMHJYQLL7O</code><br>
+            <a class="link small" href="https://stellar.expert/explorer/public/contract/CBDFHJ2V7YBQGF4PNDPTKAALHIE6PYRBL6PVAGMJA5OFFEUMHJYQLL7O" target="_blank" rel="noopener">View on Stellar Expert →</a>
           </div>
         </div>
 
@@ -295,8 +295,8 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
           <img src="/assets/stellar.png" alt="Stellar">
           <div>
             <b>ePN escrow · Testnet</b>
-            <code>CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV</code><br>
-            <a class="link small" href="https://stellar.expert/explorer/testnet/contract/CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV" target="_blank" rel="noopener">View on Stellar Expert →</a>
+            <code>CDTZDPLIB7OZ5LTCXAEY4GWUQTDKVGEGSSUWRF56MUBDNE5DSNSMXEGH</code><br>
+            <a class="link small" href="https://stellar.expert/explorer/testnet/contract/CDTZDPLIB7OZ5LTCXAEY4GWUQTDKVGEGSSUWRF56MUBDNE5DSNSMXEGH" target="_blank" rel="noopener">View on Stellar Expert →</a>
           </div>
         </div>
 
@@ -541,10 +541,10 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   /* Network config. Mainnet is the production deployment of epn_escrow; testnet is
      the free interactive demo (friendbot-funded). Choice persists per device. */
   var NETWORKS={
-    testnet:{ label:'Testnet', contract:'CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV',
+    testnet:{ label:'Testnet', contract:'CDTZDPLIB7OZ5LTCXAEY4GWUQTDKVGEGSSUWRF56MUBDNE5DSNSMXEGH',
       rpc:'https://soroban-testnet.stellar.org', passphrase:'Test SDF Network ; September 2015',
       albedo:'testnet', expert:'testnet', friendbot:true },
-    mainnet:{ label:'Mainnet', contract:'CBCKBID6DS4MAOSUAUHAQQ7HMD4ONJQD7WA4HPSWZSAVXUVM7LRQKWEH',
+    mainnet:{ label:'Mainnet', contract:'CBDFHJ2V7YBQGF4PNDPTKAALHIE6PYRBL6PVAGMJA5OFFEUMHJYQLL7O',
       rpc:'https://mainnet.sorobanrpc.com', passphrase:'Public Global Stellar Network ; September 2015',
       albedo:'public', expert:'public', friendbot:false }
   };

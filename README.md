@@ -8,12 +8,13 @@
 *ePN is one instrument in ISET's Electronic Transferable Records (eTR) suite.*
 
 [![Live App](https://img.shields.io/badge/Live-stellar.iset.finance-2456c8)](https://stellar.iset.finance)
-[![Mainnet](https://img.shields.io/badge/Soroban-Mainnet%20Live-brightgreen)](https://stellar.expert/explorer/public/contract/CBCKBID6DS4MAOSUAUHAQQ7HMD4ONJQD7WA4HPSWZSAVXUVM7LRQKWEH)
-[![Tests](https://img.shields.io/badge/contract%20tests-6%2F6%20passing-brightgreen)](contracts/epn_escrow/src/test.rs)
+[![Mainnet](https://img.shields.io/badge/Soroban-Mainnet%20Live-brightgreen)](https://stellar.expert/explorer/public/contract/CBDFHJ2V7YBQGF4PNDPTKAALHIE6PYRBL6PVAGMJA5OFFEUMHJYQLL7O)
+[![CI](https://github.com/techfiduciary/iset-etr-stellar/actions/workflows/contract.yml/badge.svg)](https://github.com/techfiduciary/iset-etr-stellar/actions/workflows/contract.yml)
+[![Tests](https://img.shields.io/badge/contract%20tests-8%2F8%20passing-brightgreen)](contracts/epn_escrow/src/test.rs)
 [![SDK](https://img.shields.io/badge/soroban--sdk-27.0.0-blue)](contracts/epn_escrow/Cargo.toml)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
-**[Live App](https://stellar.iset.finance)** · **[Mainnet Contract](https://stellar.expert/explorer/public/contract/CBCKBID6DS4MAOSUAUHAQQ7HMD4ONJQD7WA4HPSWZSAVXUVM7LRQKWEH)** · **[Registry Engine](https://iset.finance)**
+**[Live App](https://stellar.iset.finance)** · **[Mainnet Contract](https://stellar.expert/explorer/public/contract/CBDFHJ2V7YBQGF4PNDPTKAALHIE6PYRBL6PVAGMJA5OFFEUMHJYQLL7O)** · **[Registry Engine](https://iset.finance)**
 
 </div>
 
@@ -25,15 +26,17 @@ The `epn_escrow` Soroban contract is deployed and verifiable on **both networks*
 
 | Network | Contract ID | Proof |
 |---|---|---|
-| 🟢 **Mainnet** | `CBCKBID6DS4MAOSUAUHAQQ7HMD4ONJQD7WA4HPSWZSAVXUVM7LRQKWEH` | [Stellar Expert →](https://stellar.expert/explorer/public/contract/CBCKBID6DS4MAOSUAUHAQQ7HMD4ONJQD7WA4HPSWZSAVXUVM7LRQKWEH) |
-| 🧪 **Testnet** | `CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV` | [Stellar Expert →](https://stellar.expert/explorer/testnet/contract/CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV) |
+| 🟢 **Mainnet** | `CBDFHJ2V7YBQGF4PNDPTKAALHIE6PYRBL6PVAGMJA5OFFEUMHJYQLL7O` | [Stellar Expert →](https://stellar.expert/explorer/public/contract/CBDFHJ2V7YBQGF4PNDPTKAALHIE6PYRBL6PVAGMJA5OFFEUMHJYQLL7O) |
+| 🧪 **Testnet** | `CDTZDPLIB7OZ5LTCXAEY4GWUQTDKVGEGSSUWRF56MUBDNE5DSNSMXEGH` | [Stellar Expert →](https://stellar.expert/explorer/testnet/contract/CDTZDPLIB7OZ5LTCXAEY4GWUQTDKVGEGSSUWRF56MUBDNE5DSNSMXEGH) |
 
 **Mainnet deployment transactions** (fees paid in real XLM):
 
 | Step | Transaction | Detail |
 |---|---|---|
-| WASM upload | [`99dcb16b…`](https://stellar.expert/explorer/public/tx/99dcb16b03af2c5f0d3118c369ba215ad70c25292b862c04329556777bb4cdca) | wasm hash `109d5ce873ef7721664717ebb1db1e27ad56cc75f97e3a57372618118c4e9f8a` |
-| Contract deploy | [`a570c1d0…`](https://stellar.expert/explorer/public/tx/a570c1d037a1f70693131eb46922a5cef4e0a2554b7ca58f7a10c313f2b4f2a0) | instance `CBCKBID6…KWEH` |
+| WASM upload | [`27dc4c53…`](https://stellar.expert/explorer/public/tx/27dc4c53f19f4c77ebb06a45ab013d663922f6abd00a98ea2d61ca82a5de7a7d) | wasm hash `7fb80059088d523730858e6ab8b90c5de8066b4bb369672c87d514cc36e695c2` |
+| Contract deploy | [`5605a984…`](https://stellar.expert/explorer/public/tx/5605a984b7bc19ade6d3111b04ec393b4a55c8cedfbf2f9d46b71fb48af6d7e4) | instance `CBDFHJ2V…LL7O` |
+
+Both networks run the **identical wasm** (`7fb80059…`) built from this repository's [`contracts/epn_escrow/`](contracts/epn_escrow/) — verified by CI on every push.
 
 Reviewers can switch networks **directly in the app** — a Testnet/Mainnet toggle sits in the top banner of [stellar.iset.finance](https://stellar.iset.finance). Testnet is free and auto-funded (friendbot). Mainnet submits real transactions — your wallet needs an activated mainnet account (send it **2+ XLM** from any exchange; the app shows your address and a copy button if it isn't funded yet).
 
@@ -97,7 +100,7 @@ Sub-cent fees, 5-second finality, native USDC, and Soroban's resource-metered co
 
 | When | Milestone | Status |
 |---|---|---|
-| **Q3 2026** | ePN factoring flow live end-to-end: app + registry + Soroban contract on **testnet and mainnet**; 6/6 contract tests; records structured to RA 8792 / aligned to MLETR | ✅ **Shipped** |
+| **Q3 2026** | ePN factoring flow live end-to-end: app + registry + Soroban contract on **testnet and mainnet**; 8/8 contract tests (CI); records structured to RA 8792 / aligned to MLETR | ✅ **Shipped** |
 | **Q4 2026** | Full 6-instrument suite wired to on-chain settlement; lender-partner onboarding (PH pilot cohort) | 🔨 Next |
 | **Q1 2027** | Formal smart-contract security audit; 10 institutional pilot users transacting on mainnet | 📋 Planned |
 | **Q2 2027+** | Scale past 100 users; Stellar Community Fund (SCF) application for regional expansion; multi-corridor settlement | 🎯 Target |
@@ -141,7 +144,7 @@ If this engine can securely execute a micro ePN factoring flow, the same engine 
 ├── assets/                 # icons + screenshots
 └── contracts/epn_escrow/   # Soroban contract (Rust) + 6-test suite
     ├── src/lib.rs          # init / release_funds / claim_default
-    └── src/test.rs         # cargo test → 6 passing
+    └── src/test.rs         # cargo test → 8 passing (CI-verified)
 ```
 
 ### Run locally
@@ -153,7 +156,7 @@ npx serve .
 # Contract — build + test:
 cd contracts/epn_escrow
 stellar contract build     # wasm32v1-none target
-cargo test                 # 6 tests: settle, access control, zero-amount, maturity
+cargo test                 # 8 tests: settle, double-settle, access control, zero-amount, maturity
 ```
 
 > Deploying the site? Run `rm -rf contracts/epn_escrow/target` first — Rust debug artifacts exceed Cloudflare Pages' 25 MiB file limit.

@@ -10,11 +10,11 @@ Bridging private legal control with public blockchain settlement. ISET decouples
 
 **📌 Deployed Soroban Contract Addresses**
 
-Mainnet: `CBCKBID6DS4MAOSUAUHAQQ7HMD4ONJQD7WA4HPSWZSAVXUVM7LRQKWEH`
-(https://stellar.expert/explorer/public/contract/CBCKBID6DS4MAOSUAUHAQQ7HMD4ONJQD7WA4HPSWZSAVXUVM7LRQKWEH)
+Mainnet: `CBDFHJ2V7YBQGF4PNDPTKAALHIE6PYRBL6PVAGMJA5OFFEUMHJYQLL7O`
+(https://stellar.expert/explorer/public/contract/CBDFHJ2V7YBQGF4PNDPTKAALHIE6PYRBL6PVAGMJA5OFFEUMHJYQLL7O)
 
-Testnet: `CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV`
-(https://stellar.expert/explorer/testnet/contract/CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV)
+Testnet: `CDTZDPLIB7OZ5LTCXAEY4GWUQTDKVGEGSSUWRF56MUBDNE5DSNSMXEGH`
+(https://stellar.expert/explorer/testnet/contract/CDTZDPLIB7OZ5LTCXAEY4GWUQTDKVGEGSSUWRF56MUBDNE5DSNSMXEGH)
 
 
 
@@ -67,7 +67,7 @@ RA 11057 (PPSR): Perfects security interests for receivables and movable assets 
 
 
 **🛠️ Tech Stack**
-Smart Contracts: Rust / Soroban SDK 27.0.0 (stable) · 6 passing tests (`cargo test`)
+Smart Contracts: Rust / Soroban SDK 27.0.0 (stable) · 8 passing tests (`cargo test`)
 Cryptography: Post-Quantum (ML-DSA-65) for off-chain legal signing
 Network: Stellar Mainnet (live) + Testnet (free demo)
 Architecture: Off-chain legal ledger + On-chain settlement execution
