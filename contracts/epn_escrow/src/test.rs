@@ -74,7 +74,7 @@ fn only_the_lender_may_settle() {
         .err()
         .unwrap()
         .unwrap();
-    assert_eq!(err, Error::Unauthorized);
+    assert_eq!(err, Error::Unauthorized.into());
 }
 
 #[test]
@@ -90,7 +90,7 @@ fn cannot_settle_twice() {
         .err()
         .unwrap()
         .unwrap();
-    assert_eq!(err, Error::NotActive);
+    assert_eq!(err, Error::NotActive.into());
 }
 
 #[test]
@@ -102,7 +102,7 @@ fn zero_amount_is_rejected() {
         .err()
         .unwrap()
         .unwrap();
-    assert_eq!(err, Error::InvalidAmount);
+    assert_eq!(err, Error::InvalidAmount.into());
 }
 
 #[test]
@@ -112,7 +112,7 @@ fn default_before_maturity_is_rejected() {
         .init(&f.maker, &f.lender, &AMOUNT, &1_000, &zeros32(&f.env));
 
     let err = f.client.try_claim_default(&f.maker).err().unwrap().unwrap();
-    assert_eq!(err, Error::NotMatured);
+    assert_eq!(err, Error::NotMatured.into());
 }
 
 #[test]
@@ -139,5 +139,5 @@ fn only_the_maker_may_claim_default() {
         .err()
         .unwrap()
         .unwrap();
-    assert_eq!(err, Error::Unauthorized);
+    assert_eq!(err, Error::Unauthorized.into());
 }
