@@ -619,6 +619,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     $('walletPill').addEventListener('click',function(){
       if(confirm('Disconnect this wallet from the app?')){ window.STELLAR_PUBKEY=null; store('epn-wallet',null); mountConnectBtn(); toast('Wallet disconnected'); }
     });
+    if(window.checkMainnetFunding) window.checkMainnetFunding();
   }
   function mountConnectBtn(){
     $('connectBox').innerHTML='<button class="btn sm" id="connectBtn">Connect</button>';
@@ -849,7 +850,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     var acct;
     try{ acct=await server.getAccount(window.STELLAR_PUBKEY); }
     catch(e){
-      if(!CFG.friendbot) throw new Error('This wallet has no account on Stellar mainnet — fund it with XLM first.');
+      if(!CFG.friendbot){ var nf=new Error('This wallet has no account on Stellar mainnet yet.'); nf.code='NO_MAINNET_ACCOUNT'; throw nf; }
       // New testnet account — fund it automatically via friendbot, then retry once.
       onStatus&&onStatus('Funding testnet account (friendbot)…');
       try{
@@ -911,13 +912,35 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     return invokeContract('release_funds',args,onStatus);
   };
 
+  /* Mainnet accounts can't be friendbot-funded — show a self-service activation
+     path instead of a dead end: the address, a copy button, and what to send. */
+  function fundingHelp(){
+    var pk=window.STELLAR_PUBKEY||'';
+    return 'Your wallet has no <b>Stellar mainnet</b> account yet — it activates the moment it receives XLM. '+
+      'Send <b>2+ XLM</b> (from any exchange or Stellar wallet, no memo needed) to:'+
+      '<br><span class="mono" style="word-break:break-all;font-size:11px">'+esc(pk)+'</span> '+
+      '<button type="button" class="btn ghost sm" id="copyPk" style="margin-top:4px">Copy address</button>'+
+      '<br>Then press the action again — no reload needed. '+
+      '<a class="link" href="https://stellar.expert/explorer/public/account/'+esc(pk)+'" target="_blank" rel="noopener">Check funding status ↗</a>';
+  }
+  function showFundingHelp(){
+    chainMsg(fundingHelp(),'err');
+    var cb=$('copyPk');
+    if(cb) cb.addEventListener('click',function(){
+      navigator.clipboard.writeText(window.STELLAR_PUBKEY||'').then(function(){ toast('Address copied'); });
+    });
+  }
+
   function anchorOnIssue(rec){
     if(!window.STELLAR_PUBKEY){ chainMsg('Connect your Stellar wallet to register this note on-chain.'); return; }
     chainMsg('Registering the note on Stellar…');
     window.initEPNOnChain(rec,chainMsg).then(function(h){
       rec.init_tx=h; current=rec; updateStoredNote(rec);
       chainMsg('✓ Registered on Stellar · '+txLink(h),'ok'); toast('Registered on Stellar');
-    }).catch(function(e){ chainMsg('On-chain registration skipped — '+esc(e.message||'error'),'err'); });
+    }).catch(function(e){
+      if(e&&e.code==='NO_MAINNET_ACCOUNT') return showFundingHelp();
+      chainMsg('On-chain registration skipped — '+esc(e.message||'error'),'err');
+    });
   }
 
   $('settleBtn').addEventListener('click',async function(){
@@ -930,11 +953,21 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       b.textContent='Settled ✓';
       toast('ePN settled on Stellar');
     }catch(e){
-      chainMsg('Settlement failed — '+esc(e.message||'error'),'err');
+      if(e&&e.code==='NO_MAINNET_ACCOUNT') showFundingHelp();
+      else chainMsg('Settlement failed — '+esc(e.message||'error'),'err');
       b.textContent=old; b.disabled=false; return;
     }
     b.disabled=false;
   });
+
+  /* Early warning: when connected on mainnet, check the account exists so the
+     user learns about funding BEFORE they try to issue or settle. */
+  window.checkMainnetFunding = function(){
+    if(NET!=='mainnet'||!window.STELLAR_PUBKEY) return;
+    fetch('https://horizon.stellar.org/accounts/'+encodeURIComponent(window.STELLAR_PUBKEY))
+      .then(function(r){ if(r.status===404) toast('Mainnet: fund this wallet with 2+ XLM to transact','err'); })
+      .catch(function(){});
+  };
 
   /* ── Verify ── */
   function runVerify(id){

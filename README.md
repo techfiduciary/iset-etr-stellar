@@ -35,7 +35,7 @@ The `epn_escrow` Soroban contract is deployed and verifiable on **both networks*
 | WASM upload | [`99dcb16b…`](https://stellar.expert/explorer/public/tx/99dcb16b03af2c5f0d3118c369ba215ad70c25292b862c04329556777bb4cdca) | wasm hash `109d5ce873ef7721664717ebb1db1e27ad56cc75f97e3a57372618118c4e9f8a` |
 | Contract deploy | [`a570c1d0…`](https://stellar.expert/explorer/public/tx/a570c1d037a1f70693131eb46922a5cef4e0a2554b7ca58f7a10c313f2b4f2a0) | instance `CBCKBID6…KWEH` |
 
-Reviewers can switch networks **directly in the app** — a Testnet/Mainnet toggle sits in the top banner of [stellar.iset.finance](https://stellar.iset.finance). Testnet is free and auto-funded (friendbot); mainnet submits real transactions.
+Reviewers can switch networks **directly in the app** — a Testnet/Mainnet toggle sits in the top banner of [stellar.iset.finance](https://stellar.iset.finance). Testnet is free and auto-funded (friendbot). Mainnet submits real transactions — your wallet needs an activated mainnet account (send it **2+ XLM** from any exchange; the app shows your address and a copy button if it isn't funded yet).
 
 ---
 
