@@ -10,7 +10,7 @@ Live: **https://stellar.iset.finance** · Registry & signing engine: [iset.finan
 - **Notes** — your issued notes on this device; open any note as a signed B2B document with QR + VERIFY.
 - **Verify** — anyone can re-check a record against the registry by reference; no account needed.
 - **Connect** — Freighter wallet (Stellar testnet); the connected public key is bound into every note you issue.
-- **Brand** — your company name and color, applied to the note header.
+- **Brand** — your individual/company name, logo, details and color, applied to the note header.
 - Light/dark themes, mobile-first, print-to-PDF.
 
 ## On-chain
