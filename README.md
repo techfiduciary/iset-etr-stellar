@@ -54,7 +54,7 @@ Reviewers can switch networks **directly in the app** — a Testnet/Mainnet togg
 - **Notes** — your issued notes on this device; open any note as a signed B2B document with QR + VERIFY.
 - **Verify** — anyone can re-check a record against the registry by reference; no account needed.
 - **Connect** — Freighter (extension) or Albedo (web/mobile); the connected public key is bound into every note you issue.
-- **Brand** — your individual/company name, logo, details and color, applied to the note header.
+- **Brand** — your company name, logo, details and color, applied to the note header.
 - Light/dark themes, mobile-first, print-to-PDF, Testnet/Mainnet toggle.
 
 **Try it in 60 seconds** — no wallet required for the registry flow:
@@ -67,7 +67,7 @@ Reviewers can switch networks **directly in the app** — a Testnet/Mainnet togg
 
 ## 👤 Founder
 
-**Francis Neri — Founder & Tech Fiduciary.** A trade-finance infrastructure architect with deep expertise in legal tech and decentralized systems. Recognizing that public blockchains lack the legal enforceability institutions require — and that institutions will not put commercial data on public chains — he designed ISET eTR as the missing **neutral trust layer**: private, legally-structured enterprise records bridged to public blockchain settlement.
+**Francis Neri — Founder & Tech Fiduciary.** A trade-finance infrastructure architect with deep expertise in legal tech. Recognizing that public blockchains lack the legal enforceability institutions require — and that institutions will not put commercial data on public chains — he designed ISET eTR as the missing **neutral trust layer**: private, legally-structured enterprise records bridged to public blockchain settlement.
 
 ISET operates a live production registry at [iset.finance](https://iset.finance) — this repository is its Stellar settlement integration.
 
@@ -163,7 +163,7 @@ cargo test                 # 6 tests: settle, access control, zero-amount, matur
 ## ⚖️ Honesty Notes
 
 - Registry records issued from this app are **sandbox**: fully signed, fully verifiable, **no legal effect**.
-- MLETR is cited as the design standard the records are **aligned to** — not a claim of enacted-law compliance in any specific jurisdiction.
+- MLETR-ready. UNCITRAL Model Law for Electronic Transferable Records is cited as the design standard the records are **aligned to**.
 - The on-chain demo registers the connected wallet as both maker and demo-lender so reviewers can execute the full flow solo with real transactions.
 
 ## License
