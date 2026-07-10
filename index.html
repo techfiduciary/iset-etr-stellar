@@ -749,7 +749,20 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
                release_funds(caller, iset_signature Bytes64)  [caller must equal lender + sign]
      Demo model: the connected wallet acts as BOTH maker and lender, so both
      transactions execute for real on testnet and return real hashes. */
-  var RPC_URL='https://soroban-testnet.stellar.org';
+  /* Network config — testnet is the interactive demo (free, friendbot-funded);
+     mainnet is the production deployment. Switch with ?net=mainnet */
+  var NETWORKS={
+    testnet:{ label:'Testnet', contract:'CA66QGKVHDBFYUUN5LBH4ELANRVWOFHX5QJJIPCW7JUNSOO6CAHQE3KV',
+      rpc:'https://soroban-testnet.stellar.org', passphrase:'Test SDF Network ; September 2015',
+      albedo:'testnet', expert:'testnet', friendbot:true },
+    mainnet:{ label:'Mainnet', contract:'',
+      rpc:'https://mainnet.sorobanrpc.com', passphrase:'Public Global Stellar Network ; September 2015',
+      albedo:'public', expert:'public', friendbot:false }
+  };
+  var NET=(new URLSearchParams(location.search).get('net')==='mainnet'&&NETWORKS.mainnet.contract)?'mainnet':'testnet';
+  var CFG=NETWORKS[NET];
+  var RPC_URL=CFG.rpc;
+  window.SOROBAN_CONTRACT_ID=CFG.contract;
   function sdk(){ return window.StellarSdk||null; }
   async function rpcCall(method,params){
     var r=await fetch(RPC_URL,{method:'POST',headers:{'Content-Type':'application/json'},

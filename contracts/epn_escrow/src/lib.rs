@@ -69,3 +69,5 @@ impl EpnEscrow {
         e.storage().instance().set(&DataKey::Lender, &caller);
     }
 }
+
+mod test;
