@@ -165,7 +165,7 @@ cargo test                 # 8 tests: settle, double-settle, access control, zer
 
 ## ⚖️ Honesty Notes
 
-- Registry records issued from this app are **sandbox**: fully signed, fully verifiable, **no legal effect**.
+- Registry records issued from this app are **sandbox**: fully signed, fully verifiable, **no legal effect** until production.
 - MLETR-ready. UNCITRAL Model Law for Electronic Transferable Records is cited as the design standard the records are **aligned to**.
 - The on-chain demo registers the connected wallet as both maker and demo-lender so reviewers can execute the full flow solo with real transactions.
 
