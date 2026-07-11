@@ -101,9 +101,9 @@ Sub-cent fees, 5-second finality, native USDC, and Soroban's resource-metered co
 | When | Milestone | Status |
 |---|---|---|
 | **Q3 2026** | ePN factoring flow live end-to-end: app + registry + Soroban contract on **testnet and mainnet**; 8/8 contract tests (CI); records structured to RA 8792 / aligned to MLETR | ✅ **Shipped** |
-| **Q4 2026** | Full 6-instrument suite wired to on-chain settlement; lender-partner onboarding (PH pilot cohort) | 🔨 Next |
-| **Q1 2027** | Formal smart-contract security audit; 10 institutional pilot users transacting on mainnet | 📋 Planned |
-| **Q2 2027+** | Scale past 100 users; Stellar Community Fund (SCF) application for regional expansion; multi-corridor settlement | 🎯 Target |
+| **Q3 2026** | Full 6-instrument suite wired to on-chain settlement; lender-partner onboarding (PH pilot cohort) | 🔨 Next |
+| **Q4 2026** | Formal smart-contract security audit; 10 institutional pilot users transacting on mainnet | 📋 Planned |
+| **Q4 2026** | Scale past 100 users; Stellar Community Fund (SCF) application for regional expansion; multi-corridor settlement | 🎯 Target |
 
 ---
 
