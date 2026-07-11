@@ -834,7 +834,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   paintNet();
 
   /* ── Rotating hero line ── */
-  var LINES=['The record is the instrument.','Signed. Registered. Verifiable.','Six documents, one signing root.','Settles in Stellar USDC.'];
+  var LINES=['The record is the instrument.','Signed. Registered. Verifiable.','Six documents, one signing root.','Settles on Stellar.'];
   var li=0; setInterval(function(){ li=(li+1)%LINES.length; var el=$('heroLine'); if(!el)return; el.classList.remove('hero-rot'); void el.offsetWidth; el.textContent=LINES[li]; el.classList.add('hero-rot'); },3600);
 
   /* ── Instrument pickers ── */
