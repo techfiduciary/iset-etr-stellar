@@ -133,7 +133,7 @@ If this engine can securely execute a micro ePN factoring flow, the same engine 
 
 | Layer | Tech |
 |---|---|
-| Frontend | Static HTML/CSS/vanilla JS — no framework, no build step |
+| Frontend | HTML/CSS/vanilla JS — no framework, no build step |
 | Wallets | [Freighter](https://freighter.app) (extension) + [Albedo](https://albedo.link) (web, mobile-friendly) |
 | On-chain | Rust / [Soroban SDK 27.0.0](contracts/epn_escrow/Cargo.toml) — [`contracts/epn_escrow/`](contracts/epn_escrow/) |
 | Registry & signing | Production ISET engine ([iset.finance](https://iset.finance)), sandbox scope |
