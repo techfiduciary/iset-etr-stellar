@@ -96,6 +96,18 @@ Sub-cent fees, 5-second finality, native USDC, and Soroban's resource-metered co
 
 ---
 
+## 🏢 Enterprise layers
+
+What turns a form into trade-finance software — the mechanics banks expect:
+
+- **Status state machine** — every document carries a persistent status badge (ePN: `DRAFT → ISSUED → ENDORSED → SETTLED → MATURED`). Action buttons like *Endorse* and *Settle* are gated by state, and the badge advances automatically as ISET confirms each on-chain step.
+- **Hash-chained audit trail** — a dashboard Audit Log records every create / endorse / settle as a timestamped entry carrying the previous-state hash and the new-state hash (real SHA-256). An immutable, compliance-ready paper trail.
+- **Identity & privacy** — each document shows an issuer-verification badge (TIN verified via the ISET registry), proving the party behind the TIN without exposing personal data on-chain.
+- **Cross-border FX & withholding** — a settlement-currency selector surfaces an indicative FX rate whenever it differs from the base currency; the ePN adds a withholding-tax input that deducts from the net proceeds.
+- **Amendment workflow** — an *Amend* action, enabled only while a document is `ISSUED`, locks the current version into the audit trail as `AMENDED` and issues a fresh version.
+
+---
+
 ## 🗺️ Roadmap
 
 | When | Milestone | Status |
