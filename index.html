@@ -284,6 +284,8 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   .hero h1{font-size:40px;min-height:0}
   .home-cols{display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start}
   .home-cols .block{margin-top:0}
+  .industries{grid-template-columns:repeat(4,1fr)}
+  .industries .icard{padding:11px}
   .invlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px}
   .issue-2col{display:grid;grid-template-columns:1fr;gap:0}
 }
@@ -473,7 +475,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
             </div>
             <div class="badge2">
               <span class="bic"><img src="/assets/stellar.png" alt="Stellar"></span>
-              <span class="bt">Settlement:<b>Stellar USDC</b></span>
+              <span class="bt">Settlement:<b id="dSettleCcy">Stellar USDC</b></span>
             </div>
           </div>
         </div>
@@ -656,7 +658,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
         [{k:'maker',l:'Maker — who promises to pay',ph:'Manila Trade, Inc.'},{k:'maker_tin',l:'Maker TIN',t:'tin'}],
         [{k:'payee',l:'Pay to the order of — payee',ph:'XYZ Manufacturing, Inc.'},{k:'payee_tin',l:'Payee TIN',t:'tin'}],
         [{k:'amount',l:'Principal amount',t:'amount'}],
-        [{k:'interest_rate',l:'Interest rate % p.a.',t:'num',ph:'5.5'},{k:'wht_rate',l:'Withholding tax %',t:'num',ph:'20'}],
+        [{k:'interest_rate',l:'Interest rate % p.a.',t:'num',ph:'5.5'},{k:'wht_rate',l:'Withholding tax %',t:'num',ph:'1'}],
         [{k:'issue_date',l:'Issue date',t:'date'},{k:'maturity_date',l:'Maturity date',t:'date',plus:90}],
         [{k:'place',l:'Place of issue',t:'text',def:'Philippines'},{k:'purpose',l:'Purpose of note',t:'select',opts:['Working Capital','Trade Finance (Import/Export)','Inventory Financing','Equipment / Asset Purchase','General Business Operations']}],
         [{k:'settle',l:'Settlement currency',t:'settle'}],
@@ -664,7 +666,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       ],
       doc:[
         {h:'Parties',rows:[{k:'Maker (Promisor)',f:'maker',tin:'maker_tin'},{k:'Pay to the order of:',f:'payee',tin:'payee_tin'}]},
-        {h:'Terms',rows:[{k:'Interest rate (p.a.)',f:'interest_rate',fmt:'pct',fb:'Non-interest-bearing'},{k:'Maturity date',f:'maturity_date',fmt:'date'},{k:'Place of issue',f:'place'},{k:'Purpose',f:'purpose'},{k:'Remarks',f:'remarks',opt:1}]}
+        {h:'Terms',rows:[{k:'Interest rate (p.a.)',f:'interest_rate',fmt:'pct',fb:'Non-interest-bearing'},{k:'Withholding tax',f:'wht_rate',fmt:'pct',opt:1},{k:'Maturity date',f:'maturity_date',fmt:'date'},{k:'Place of issue',f:'place'},{k:'Purpose',f:'purpose'},{k:'Remarks',f:'remarks',opt:1}]}
       ]
     },
     eBE:{
@@ -986,7 +988,8 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       f.opts.map(function(o){ return '<label class="chk"><input type="checkbox" value="'+esc(o)+'">'+esc(o)+'</label>'; }).join('')+'</div></div>';
   }
   function settleRow(f){
-    return '<div class="row" id="settleWrap"><div><label class="lbl">Settlement currency</label><select class="input" id="f_settle_ccy">'+ccyOpts('PHP')+'</select></div>'+
+    // Settlement runs on Stellar, so the settlement asset is a Stellar asset.
+    return '<div class="row" id="settleWrap"><div><label class="lbl">Settlement currency</label><select class="input" id="f_settle_ccy"><option value="USDC" selected>USDC — Stellar USDC</option><option value="XLM">XLM — Stellar Lumen</option></select></div>'+
       '<div id="fxCell" style="display:none"><label class="lbl">Indicative FX rate</label><input class="input" id="f_fx_rate" inputmode="decimal" placeholder="e.g. 0.0180"></div></div>';
   }
   function renderForm(){
@@ -1013,7 +1016,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     $('issueFields').querySelectorAll('input,select,textarea').forEach(function(el){ el.addEventListener('input',recompute); el.addEventListener('change',recompute); });
     if(settleCcy) settleCcy.addEventListener('change',syncFx);
     if(baseCcy) baseCcy.addEventListener('change',syncFx);
-    recompute();
+    syncFx();
     // Lock non-ePN instruments: fields visible but not typeable, issuance disabled.
     $('issueFields').querySelectorAll('input,select,textarea').forEach(function(el){ el.disabled=!active; });
     $('issueBtn').disabled=!active;
@@ -1193,8 +1196,9 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     $('dTitle').textContent=I.name.toUpperCase();
     $('dSub').textContent=I.code+' · Issued via ISET eTR';
     $('dLegal').textContent=I.legal;
-    // amount
-    var big = n.calc&&n.calc.grand?n.calc.grand[1]:(n.amount);
+    // amount — headline is the instrument's face value (principal for ePN, total
+    // payable for eINV); any WHT deduction / net proceeds is shown in Financials.
+    var big = (n.calc&&n.calc.big!=null)?n.calc.big:(n.amount);
     if(I.code==='eBL' && !(n.amount>0)){ $('dAmount').style.display='none'; }
     else { $('dAmount').style.display=''; $('dAmount').textContent=n.currency+' '+fmtAmt(big); }
     // sections
@@ -1231,6 +1235,8 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     var issuerTin=f.maker_tin||f.drawer_tin||f.shipper_tin||f.applicant_tin||f.depositor_tin||f.seller_tin||'';
     $('dIdName').textContent = issuerTin ? 'Issuer verified via ISET registry' : 'Issuer registered via ISET';
     $('dIdSub').textContent = issuerTin ? ('TIN '+issuerTin+' on file · personal data stays off-chain') : 'No TIN on file · add one in Brand for a verified badge';
+    // Footer settlement label follows the chosen Stellar settlement asset.
+    $('dSettleCcy').textContent = (f.settle_ccy==='XLM') ? 'Stellar Lumen' : 'Stellar USDC';
     $('dVerifyBtn').href=verifyUrl(n.id); $('openVerifyBtn').href=verifyUrl(n.id);
     $('dSig').innerHTML='<b>Signature '+esc(n.signature_alg||'ML-DSA-65')+':</b> '+esc(String(n.signature||'').slice(0,64))+'…<br>'+
       '<b>Record hash:</b> '+esc(n.record_hash||'')+'<br>Registry record, verifiable by reference'+
