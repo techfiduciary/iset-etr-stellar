@@ -861,13 +861,15 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   $('formInstr').addEventListener('change',function(){ setInstrument(this.value); });
 
   /* ── Connect (Freighter → Albedo) ── */
+  function refreshWalletStat(){ if(!$('view-home').hidden && $('statsGrid')) renderDashboard(); }
   function setConnected(pk){
     window.STELLAR_PUBKEY=pk; store('epn-wallet',pk);
     $('connectBox').innerHTML='<span class="pill" id="walletPill" title="'+esc(pk)+' — click to disconnect"><span class="dot"></span>'+esc(trunc(pk))+'</span>';
     $('walletPill').addEventListener('click',function(){
-      if(confirm('Disconnect this wallet from the app?')){ window.STELLAR_PUBKEY=null; store('epn-wallet',null); mountConnectBtn(); toast('Wallet disconnected'); }
+      if(confirm('Disconnect this wallet from the app?')){ window.STELLAR_PUBKEY=null; store('epn-wallet',null); mountConnectBtn(); toast('Wallet disconnected'); refreshWalletStat(); }
     });
     if(window.checkMainnetFunding) window.checkMainnetFunding();
+    refreshWalletStat();
   }
   function mountConnectBtn(){
     $('connectBox').innerHTML='<button class="btn sm" id="connectBtn">Connect</button>';
@@ -1148,7 +1150,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       stat(list.length,'Documents','across '+ (new Set(list.map(function(n){return n.type;}))).size +' instrument types')+
       stat(topCcy?(topCcy+' '+fmtAmt(byCcy[topCcy])):'—','Total value', topCcy?'largest currency':'issue your first')+
       stat(live,'Completed','fully settled / transferred')+
-      stat((store('epn-wallet')?'Connected':'—'),'Wallet', NET);
+      stat((window.STELLAR_PUBKEY?'Connected':'—'),'Wallet', NET);
     $('instGrid').innerHTML=ORDER.map(function(c){ var I=INSTR[c], on=isActive(c);
       return '<div class="instcard'+(on?'':' locked')+'" data-inst="'+c+'"><div class="ii">'+I.icon+'</div><div class="in">'+c+'</div><div class="ic2">'+esc(I.name)+'</div><div class="ib">'+(on?'Issue →':'Roadmap · preview')+'</div></div>';
     }).join('');
