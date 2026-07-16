@@ -868,12 +868,13 @@ main{display:block;margin-top:18px}
         [{k:'repay_freq',l:'Repayment frequency *',t:'select',opts:['Single payment at maturity','Monthly','Quarterly','Semi-annual','Annual']},{k:'place',l:'Place of issue *',t:'text',def:'Philippines'}],
         [{k:'settle',l:'Settlement currency',t:'settle'}],
         [{k:'purpose',l:'Purpose of note *',t:'select',opts:['Working Capital','Trade Finance (Import/Export)','Inventory Financing','Equipment / Asset Purchase','General Business Operations']},{k:'remarks',l:'Remarks',t:'text',ph:'Reference or terms note'}],
-        /* Stipulations (MORB-pattern) — disclosure-only terms the parties set;
-           empty = the honest defaults (no auto-renewal / unsecured / none).
-           Yield & pretermination are NOT fields: those two are derived from
-           what the contract actually enforces. */
-        [{k:'renewal',l:'Renewal',t:'select',opts:['No automatic renewal','Automatic renewal — same terms']},{k:'liq_damages',l:'Liquidated damages',t:'text',ph:'e.g. 12% + 10% attorney’s fees — empty = none'}],
-        [{k:'collateral',l:'Collateral / security',t:'text',ph:'Describe stipulated collateral — empty = unsecured (no collateral)'}]
+        /* Stipulations — one open, full-width canvas: the issuer writes
+           whatever terms the deal needs (renewal, collateral, liquidated
+           damages, anything else). Empty = the legal meaning of silence:
+           no auto-renewal, unsecured, none stipulated. Yield & pretermination
+           are NOT part of this field: those two are derived from what the
+           contract actually enforces. */
+        [{k:'stipulations',l:'Terms & conditions — stipulations',t:'area',ph:'e.g. Liquidated damages: 12% of the amount due · Renewal: none · Collateral: none — empty = no further stipulations'}]
       ],
       doc:[
         {h:'Parties',cols:2,rows:[{k:'Maker (Promisor)',f:'maker',tin:'maker_tin'},{k:'Pay to the order of:',f:'payee',tin:'payee_tin'}]},
@@ -1726,10 +1727,20 @@ main{display:block;margin-top:18px}
       var tc='<div class="doc-sec doc-2col">'+secHead('Terms & Conditions');
       tc+='<div class="kv"><span class="k">Computation of Yield</span><span class="v">'+(n.calc&&n.calc.hasInterest?'Simple, non-compounded, on the stated principal':'Non-interest-bearing')+'</span></div>';
       tc+='<div class="kv"><span class="k">Pretermination</span><span class="v">Allowed — reduces interest proportionately</span></div>';
-      tc+='<div class="kv"><span class="k">Renewal</span><span class="v">'+esc(f.renewal||'No automatic renewal')+'</span></div>';
-      tc+='<div class="kv"><span class="k">Collateral</span><span class="v">'+esc(f.collateral||'No collateral')+'</span></div>';
-      tc+='<div class="kv"><span class="k">Liquidated Damages</span><span class="v">'+esc(f.liq_damages||'None stipulated')+'</span></div>';
-      if(f.collateral) tc+='<div class="small" style="grid-column:1/-1;color:#6b7686;margin-top:8px;line-height:1.5">Collateral stipulated — creating and perfecting any security interest in it is the parties’ responsibility under RA 11057 (Personal Property Security Act). This record discloses the stipulation; it does not create the security interest.</div>';
+      if(f.stipulations){
+        // issuer-written stipulations — full width, verbatim
+        tc+='<div class="kv kv-wide"><span class="k">Stipulations</span><span class="v">'+esc(f.stipulations)+'</span></div>';
+        tc+='<div class="small" style="grid-column:1/-1;color:#6b7686;margin-top:8px;line-height:1.5">Stipulations are the parties’ own terms, disclosed on this record. Any security interest they create is perfected by the parties under RA 11057 (Personal Property Security Act) — this record discloses, it does not perfect.</div>';
+      } else if(f.renewal||f.collateral||f.liq_damages){
+        // legacy records issued while these were separate fields
+        tc+='<div class="kv"><span class="k">Renewal</span><span class="v">'+esc(f.renewal||'No automatic renewal')+'</span></div>';
+        tc+='<div class="kv"><span class="k">Collateral</span><span class="v">'+esc(f.collateral||'No collateral')+'</span></div>';
+        tc+='<div class="kv"><span class="k">Liquidated Damages</span><span class="v">'+esc(f.liq_damages||'None stipulated')+'</span></div>';
+        if(f.collateral) tc+='<div class="small" style="grid-column:1/-1;color:#6b7686;margin-top:8px;line-height:1.5">Collateral stipulated — creating and perfecting any security interest in it is the parties’ responsibility under RA 11057 (Personal Property Security Act). This record discloses the stipulation; it does not create the security interest.</div>';
+      } else {
+        // silence has a legal meaning — print it rather than leave a blank
+        tc+='<div class="kv kv-wide"><span class="k">Stipulations</span><span class="v">No further stipulations — no automatic renewal · no collateral · no liquidated damages</span></div>';
+      }
       tc+='</div>'; html+=tc;
     }
     // Chain of control — the face carries a one-line summary of current
