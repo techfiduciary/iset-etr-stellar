@@ -861,7 +861,10 @@ main{display:block;margin-top:18px}
       form:[
         [{k:'maker',l:'Maker — who promises to pay *',ph:'Manila Trade, Inc.'},{k:'maker_tin',l:'Maker TIN *',t:'tin'}],
         [{k:'payee',l:'Pay to the order of — payee *',ph:'XYZ Manufacturing, Inc.'},{k:'payee_tin',l:'Payee TIN *',t:'tin'}],
-        [{k:'payee_addr',l:'Payee Stellar address — becomes the on-chain holder',t:'text',ph:'G… (leave empty to hold with your connected wallet)'}],
+        /* No payee-wallet field at issuance: the maker's wallet holds the
+           fresh note (signing = making; control = delivery), and control
+           reaches the payee through the endorse → accept flow — the same
+           path any later holder uses. */
         [{k:'amount',l:'Principal amount *',t:'amount'}],
         [{k:'interest_rate',l:'Interest rate % p.a.',t:'num',ph:'5.5'},{k:'wht_rate',l:'Withholding tax %',t:'num',ph:'1'}],
         [{k:'issue_date',l:'Issue date *',t:'date'},{k:'maturity_date',l:'Maturity date *',t:'date',plus:90}],
@@ -874,11 +877,11 @@ main{display:block;margin-top:18px}
            no auto-renewal, unsecured, none stipulated. Yield & pretermination
            are NOT part of this field: those two are derived from what the
            contract actually enforces. */
-        [{k:'stipulations',l:'Terms & conditions — stipulations',t:'area',ph:'e.g. Liquidated damages: 12% of the amount due · Renewal: none · Collateral: none — empty = no further stipulations'}]
+        [{k:'stipulations',l:'Terms & conditions — stipulations',t:'area'}]
       ],
       doc:[
         {h:'Parties',cols:2,rows:[{k:'Maker (Promisor)',f:'maker',tin:'maker_tin'},{k:'Pay to the order of:',f:'payee',tin:'payee_tin'}]},
-        {h:'Terms',cols:2,rows:[{k:'Interest rate (p.a.)',f:'interest_rate',fmt:'pct',fb:'Non-interest-bearing'},{k:'Withholding tax',f:'wht_rate',fmt:'pct',opt:1},{k:'Maturity date',f:'maturity_date',fmt:'date'},{k:'Repayment',f:'repay_freq',fmt:'repayment'},{k:'Place of issue',f:'place'},{k:'Purpose',f:'purpose'},{k:'Remarks',f:'remarks',opt:1}]}
+        {h:'Terms',cols:2,rows:[{k:'Interest rate (p.a.)',f:'interest_rate',fmt:'pct',fb:'Non-interest-bearing'},{k:'Withholding tax',f:'wht_rate',fmt:'pct',opt:1},{k:'Place of issue',f:'place'},{k:'Purpose',f:'purpose'},{k:'Maturity date',f:'maturity_date',fmt:'date'},{k:'Repayment',f:'repay_freq',fmt:'repayment'},{k:'Remarks',f:'remarks',opt:1}]}
       ]
     },
     eBE:{
@@ -1534,10 +1537,6 @@ main{display:block;margin-top:18px}
     if(!(amount>0)) return issueErr('Enter an amount / value greater than zero.');
     // derived
     if(CUR==='eBE' && f.tenor){ f.maturity_date=addDays(f.issue_date||today(), Number(f.tenor)||0); }
-    // Two-party ePN: the payee's own Stellar address becomes the on-chain holder
-    // (contract `lender`). Empty ⇒ the connected wallet holds it (solo flow).
-    if(f.payee_addr && !/^G[A-Z2-7]{55}$/.test(f.payee_addr))
-      return issueErr('The payee Stellar address must be a valid public key — G followed by 55 characters.');
     f.settlement_rail='Stellar USDC'; f.stellar_pubkey=window.STELLAR_PUBKEY||'';
     var holder = f[p2]||f[p1];
     var btn=$('issueBtn'); btn.disabled=true; btn.textContent='Issuing & signing…';
@@ -1553,9 +1552,10 @@ main{display:block;margin-top:18px}
         status:body.status||'registered', sandbox:body.sandbox!==false, issued:f.issue_date,
         signature:body.signature, signature_alg:body.signature_alg||'ML-DSA-65',
         record_hash:body.record_hash, audit_id:body.audit_id, audit:[],
-        // chain-of-control roles: maker signs init; the payee's wallet (or the
-        // maker's own, solo flow) is the on-chain holder until endorsed onward
-        maker_addr:window.STELLAR_PUBKEY||'', holder_addr:(f.payee_addr||window.STELLAR_PUBKEY||''), pending_addr:null };
+        // chain-of-control roles: the maker's wallet signs init and holds the
+        // fresh note; control reaches the payee (and any later holder) via
+        // the endorse → accept flow
+        maker_addr:window.STELLAR_PUBKEY||'', holder_addr:(window.STELLAR_PUBKEY||''), pending_addr:null };
       await addAudit(rec,'Issued & signed');
       var list=store('epn-notes')||[]; list.unshift(rec); store('epn-notes',list.slice(0,80));
       toast(CUR+' issued & signed');
@@ -2039,9 +2039,10 @@ main{display:block;margin-top:18px}
 
   window.initEPNOnChain = async function(note,onStatus){
     var S=sdk(), me=window.STELLAR_PUBKEY;
-    // Two-party: the payee's wallet is registered as the on-chain holder
-    // (contract `lender`); the connected wallet signs as maker. Solo flow
-    // (no payee address given) keeps the maker's wallet in both roles.
+    // The maker's wallet holds the fresh note (signing = making; control =
+    // delivery). Control moves to the payee — and any later holder — through
+    // on-chain endorse → accept. Legacy records that named a holder at
+    // issuance keep it via note.holder_addr.
     var holder=note.holder_addr||me;
     // On-chain maturity must match the document's stated maturity date — an
     // explorer-visible mismatch (this was hardcoded to +90 days regardless of
