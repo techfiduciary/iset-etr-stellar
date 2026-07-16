@@ -275,7 +275,17 @@ main{display:block;margin-top:18px}
 .doc-title{text-align:center;font-size:19px;font-weight:800;letter-spacing:.02em;margin-top:3px}
 .doc-sub{text-align:center;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.07em;color:#2456c8;margin-top:2px}
 .doc-legal{text-align:center;font-style:italic;color:#6b7686;font-size:12px;max-width:64ch;margin:10px auto 4px;line-height:1.55}
-.doc-amt{text-align:center;font-size:32px;font-weight:800;letter-spacing:-.02em;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.doc-amt{text-align:center;font-size:32px;font-weight:800;letter-spacing:-.02em;margin:6px 0 0;font-variant-numeric:tabular-nums}
+.doc-amt-words{text-align:center;font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:#6b7686;margin:1px 0 2px}
+/* Chain of Control: one-line summary on the face; history expands on demand.
+   Paper gets a verify pointer instead of a dead button (.print-only), and an
+   expanded history prints as its own Endorsement Schedule (Allonge) page. */
+.chain-sum{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px}
+.chain-sum .mono{font-size:11px}
+.print-only{display:none}
+.allonge-head{display:none}
+.allonge-head .ah-t{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:#13202e}
+.allonge-head .ah-s{font-size:9px;color:#6b7686;margin-top:3px;line-height:1.5}
 .doc-sec{margin-top:14px;border-top:1px solid rgba(20,25,31,.12);padding-top:10px}
 .doc-sec .sh{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:600;margin-bottom:2px}
 .kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px dotted rgba(20,25,31,.09)}
@@ -400,6 +410,11 @@ main{display:block;margin-top:18px}
   .kv.kv-wide .v{font-size:11px;line-height:1.35}
   .doc-checks{margin-top:4px;gap:4px}
   .doc-chk{padding:2px 6px;font-size:9px}
+  .print-only{display:block;font-size:9px;color:#6b7686;margin-top:4px}
+  /* WYSIWYG allonge: the history prints only if it was expanded on screen —
+     and then as its own page, headed as an Endorsement Schedule (Allonge). */
+  #chainTimeline:not([hidden]){page-break-before:always;padding-top:22px}
+  #chainTimeline:not([hidden]) .allonge-head{display:block;margin:0 0 12px;padding-bottom:9px;border-bottom:2px solid #13202e}
   .doc-id{padding:6px 16px}
   .doc-foot{padding:9px 16px}
   .doc-sig{padding:7px 16px 9px}
@@ -576,6 +591,7 @@ main{display:block;margin-top:18px}
           <div class="doc-sub" id="dSub">ePN · Issued via ISET eTR</div>
           <p class="doc-legal" id="dLegal">—</p>
           <div class="doc-amt" id="dAmount">—</div>
+          <div class="doc-amt-words" id="dAmountWords"></div>
           <div id="dSections"></div>
           <div class="doc-sec doc-2col"><div class="sh">Registry</div>
             <div class="kv"><span class="k">Reference</span><span class="v mono" id="dRef">—</span></div>
@@ -750,6 +766,33 @@ main{display:block;margin-top:18px}
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function fmtAmt(n){ var x=Number(n); return isFinite(x)?x.toLocaleString('en-US',{maximumFractionDigits:2}):String(n); }
+  /* Face-value formatting: always two decimals, and the amount spelled out in
+     words below it — the classic anti-tamper convention on paper instruments. */
+  function fmtAmt2(n){ var x=Number(n); return isFinite(x)?x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):String(n); }
+  var W_ONES=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  var W_TENS=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  function w3(n){ // 0-999
+    var s='';
+    if(n>=100){ s+=W_ONES[Math.floor(n/100)]+' Hundred'; n%=100; if(n) s+=' '; }
+    if(n>=20){ s+=W_TENS[Math.floor(n/10)]; n%=10; if(n) s+='-'+W_ONES[n]; }
+    else if(n>0){ s+=W_ONES[n]; }
+    return s;
+  }
+  function numToWords(n){
+    n=Math.floor(Math.abs(Number(n)||0));
+    if(n===0) return 'Zero';
+    var parts=[], scales=[[1e12,'Trillion'],[1e9,'Billion'],[1e6,'Million'],[1e3,'Thousand'],[1,'']];
+    scales.forEach(function(sc){
+      if(n>=sc[0]){ var q=Math.floor(n/sc[0]); n%=sc[0]; parts.push(w3(q)+(sc[1]?' '+sc[1]:'')); }
+    });
+    return parts.join(' ');
+  }
+  var CCY_WORDS={PHP:'Pesos',USD:'US Dollars',EUR:'Euros',GBP:'Pounds Sterling',JPY:'Yen',SGD:'Singapore Dollars',AUD:'Australian Dollars',HKD:'Hong Kong Dollars',CNY:'Yuan',AED:'Dirhams',INR:'Rupees'};
+  function amountInWords(amt,ccy){
+    var x=Number(amt)||0, i=Math.floor(x), c=Math.round((x-i)*100);
+    var tail=c>0?(' and '+(c<10?'0':'')+c+'/100'):'';
+    return numToWords(i)+' '+(CCY_WORDS[ccy]||ccy)+tail+' Only';
+  }
   function trunc(k){ return k?k.slice(0,4)+'…'+k.slice(-4):''; }
   function initials(n){ var w=String(n||'').trim().split(/\s+/).filter(Boolean); return ((w[0]||'e')[0]+(w[1]?w[1][0]:'')).toUpperCase()||'eR'; }
   function fmtDate(d){ if(!d)return '—'; try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});}catch(e){return d;} }
@@ -794,7 +837,13 @@ main{display:block;margin-top:18px}
         [{k:'issue_date',l:'Issue date *',t:'date'},{k:'maturity_date',l:'Maturity date *',t:'date',plus:90}],
         [{k:'repay_freq',l:'Repayment frequency *',t:'select',opts:['Single payment at maturity','Monthly','Quarterly','Semi-annual','Annual']},{k:'place',l:'Place of issue *',t:'text',def:'Philippines'}],
         [{k:'settle',l:'Settlement currency',t:'settle'}],
-        [{k:'purpose',l:'Purpose of note *',t:'select',opts:['Working Capital','Trade Finance (Import/Export)','Inventory Financing','Equipment / Asset Purchase','General Business Operations']},{k:'remarks',l:'Remarks',t:'text',ph:'Reference or terms note'}]
+        [{k:'purpose',l:'Purpose of note *',t:'select',opts:['Working Capital','Trade Finance (Import/Export)','Inventory Financing','Equipment / Asset Purchase','General Business Operations']},{k:'remarks',l:'Remarks',t:'text',ph:'Reference or terms note'}],
+        /* Stipulations (MORB-pattern) — disclosure-only terms the parties set;
+           empty = the honest defaults (no auto-renewal / unsecured / none).
+           Yield & pretermination are NOT fields: those two are derived from
+           what the contract actually enforces. */
+        [{k:'renewal',l:'Renewal',t:'select',opts:['No automatic renewal','Automatic renewal — same terms']},{k:'liq_damages',l:'Liquidated damages',t:'text',ph:'e.g. 12% + 10% attorney’s fees — empty = none'}],
+        [{k:'collateral',l:'Collateral / security',t:'text',ph:'Describe stipulated collateral — empty = unsecured (no collateral)'}]
       ],
       doc:[
         {h:'Parties',cols:2,rows:[{k:'Maker (Promisor)',f:'maker',tin:'maker_tin'},{k:'Pay to the order of:',f:'payee',tin:'payee_tin'}]},
@@ -1578,8 +1627,11 @@ main{display:block;margin-top:18px}
     // amount — headline is the instrument's face value (principal for ePN, total
     // payable for eINV); any WHT deduction / net proceeds is shown in Financials.
     var big = (n.calc&&n.calc.big!=null)?n.calc.big:(n.amount);
-    if(I.code==='eBL' && !(n.amount>0)){ $('dAmount').style.display='none'; }
-    else { $('dAmount').style.display=''; $('dAmount').textContent=n.currency+' '+fmtAmt(big); }
+    if(I.code==='eBL' && !(n.amount>0)){ $('dAmount').style.display='none'; $('dAmountWords').style.display='none'; }
+    else {
+      $('dAmount').style.display=''; $('dAmount').textContent=n.currency+' '+fmtAmt2(big);
+      $('dAmountWords').style.display=''; $('dAmountWords').textContent=amountInWords(big, n.currency);
+    }
     // sections
     var html='';
     I.doc.forEach(function(sec){
@@ -1602,38 +1654,68 @@ main{display:block;margin-top:18px}
     if(n.calc && ((n.calc.rows&&n.calc.rows.length)||n.calc.settle_ccy)){
       var fr='<div class="doc-sec doc-2col"><div class="sh">Financials</div>';
       (n.calc.rows||[]).forEach(function(r){ fr+='<div class="kv"><span class="k">'+esc(r[0])+'</span><span class="v">'+n.currency+' '+fmtAmt(Math.abs(r[1]))+(r[1]<0?' (less)':'')+'</span></div>'; });
-      if(n.calc.grand) fr+='<div class="kv"><span class="k">'+esc(n.calc.grand[0])+'</span><span class="v">'+n.currency+' '+fmtAmt(n.calc.grand[1])+'</span></div>';
+      // Settlement before the grand total: in the 2-col grid this seats the
+      // grand (Net to payee) directly under the withholding-tax row.
       if(n.calc.settle_ccy) fr+='<div class="kv"><span class="k">Settlement currency</span><span class="v">'+esc(n.calc.settle_ccy)+(n.calc.settle_amount?' · ≈ '+fmtAmt(n.calc.settle_amount)+' @ '+esc(n.calc.fx_rate):'')+'</span></div>';
+      if(n.calc.grand) fr+='<div class="kv"><span class="k">'+esc(n.calc.grand[0])+'</span><span class="v" style="font-size:16px">'+n.currency+' '+fmtAmt(n.calc.grand[1])+'</span></div>';
       if(n.calc.hasInterest) fr+='<div class="small" style="grid-column:1/-1;color:#6b7686;margin-top:8px;line-height:1.5">Indicative — interest is computed to the stated maturity. It accrues to the actual settlement date; settling early reduces the interest proportionately.</div>';
       fr+='</div>'; html+=fr;
     }
-    // Terms & Conditions — MORB-pattern disclosures, worded to match what this
-    // contract actually enforces rather than reused bank-template boilerplate:
-    // e.g. "Pretermination: Allowed" because release_funds has no maturity
-    // gate, not the paper-template default of "No Pretermination."
+    // Terms & Conditions — MORB-pattern stipulations. Renewal / Collateral /
+    // Liquidated Damages come from the Issue form (empty = honest defaults);
+    // Computation of Yield and Pretermination are DERIVED from what the
+    // contract actually enforces (release_funds has no maturity gate →
+    // pretermination is allowed) — never user-editable, or the document
+    // could stipulate what the code contradicts.
     if(I.code==='ePN'){
       var tc='<div class="doc-sec doc-2col"><div class="sh">Terms &amp; Conditions</div>';
       tc+='<div class="kv"><span class="k">Computation of Yield</span><span class="v">'+(n.calc&&n.calc.hasInterest?'Simple, non-compounded, on the stated principal':'Non-interest-bearing')+'</span></div>';
       tc+='<div class="kv"><span class="k">Pretermination</span><span class="v">Allowed — reduces interest proportionately</span></div>';
-      tc+='<div class="kv"><span class="k">Renewal</span><span class="v">No automatic renewal</span></div>';
-      tc+='<div class="kv"><span class="k">Collateral</span><span class="v">No collateral</span></div>';
-      tc+='<div class="kv"><span class="k">Liquidated Damages</span><span class="v">None stipulated</span></div>';
+      tc+='<div class="kv"><span class="k">Renewal</span><span class="v">'+esc(f.renewal||'No automatic renewal')+'</span></div>';
+      tc+='<div class="kv"><span class="k">Collateral</span><span class="v">'+esc(f.collateral||'No collateral')+'</span></div>';
+      tc+='<div class="kv"><span class="k">Liquidated Damages</span><span class="v">'+esc(f.liq_damages||'None stipulated')+'</span></div>';
+      if(f.collateral) tc+='<div class="small" style="grid-column:1/-1;color:#6b7686;margin-top:8px;line-height:1.5">Collateral stipulated — creating and perfecting any security interest in it is the parties’ responsibility under RA 11057 (Personal Property Security Act). This record discloses the stipulation; it does not create the security interest.</div>';
       tc+='</div>'; html+=tc;
     }
-    // Chain of control — every transfer of the note's exclusive control, each
-    // backed by an on-chain transaction. The digital equivalent of the
-    // endorsements on the back of a paper note.
+    // Chain of control — the face carries a one-line summary of current
+    // custody (bounded, never breaks the page budget); the full history is a
+    // click away on screen. On paper the toggle is replaced by a verify
+    // pointer, and an EXPANDED history prints as its own page — the
+    // Endorsement Schedule (Allonge), the classic slip attached to a paper
+    // note when its endorsements outgrow the instrument. WYSIWYG: collapsed
+    // on screen = one page printed; expanded = face + allonge.
     if(I.onchain && (n.chain&&n.chain.length || n.pending_addr)){
+      var endorseN=(n.chain||[]).filter(function(c){ return /^Endorsed/.test(c.act||''); }).length;
+      var holderShort=trunc(n.holder_addr||(n.chain&&n.chain.length?n.chain[n.chain.length-1].addr:'')||'');
+      var sum = endorseN ? ('Endorsed '+endorseN+'× · currently held by <b class="mono">'+esc(holderShort)+'</b>')
+                         : ('Held by <b class="mono">'+esc(holderShort)+'</b>');
+      if(n.settle_tx) sum+=' · settled';
+      if(n.pending_addr) sum+=' · endorsement offered to <span class="mono">'+esc(trunc(n.pending_addr))+'</span>';
       var ch='<div class="doc-sec"><div class="sh">Chain of Control</div>';
+      ch+='<div class="chain-sum"><span>'+sum+'</span>'+
+          '<button type="button" class="btn ghost sm no-print" id="chainHistBtn">Show full history</button></div>';
+      ch+='<div class="print-only">Full chain of control — verify via the QR below · Ref '+esc(n.id)+'</div>';
+      ch+='<div id="chainTimeline" hidden>';
+      ch+='<div class="allonge-head"><div class="ah-t">Endorsement Schedule (Allonge)</div>'+
+          '<div class="ah-s">'+esc(I.code)+' Ref '+esc(n.id)+' · as of <span id="allongeAsOf">—</span> · Printout of an electronic transferable record — the authoritative record is electronic; verify by reference or the QR on the face page.</div></div>';
       (n.chain||[]).forEach(function(c){
         ch+='<div class="kv"><span class="k">'+esc(c.act)+'</span><span class="v mono">'+esc(trunc(c.addr))+
           (c.tx?' · tx '+esc(String(c.tx).slice(0,12))+'…':'')+'</span></div>';
       });
       if(n.pending_addr) ch+='<div class="kv"><span class="k">Endorsement offered to</span><span class="v mono">'+esc(trunc(n.pending_addr))+' · awaiting acceptance</span></div>';
       ch+='<div class="small" style="color:#6b7686;margin-top:8px;line-height:1.5">Control is exclusive — one holder at a time, enforced by the settlement contract on Stellar. Each transfer above is an authorized on-chain transaction — the electronic equivalent of possession, which the Personal Property Security Act (RA 11057, §19) ranks above registration when perfecting a security interest in an instrument.</div>';
+      ch+='</div>';
       ch+='</div>'; html+=ch;
     }
     $('dSections').innerHTML=html;
+    // chain-history toggle (screen only — the button never prints)
+    var chb=$('chainHistBtn');
+    if(chb) chb.addEventListener('click',function(){
+      var t=$('chainTimeline'); if(!t) return;
+      var open=!t.hidden; t.hidden=open;
+      chb.textContent=open?'Show full history':'Hide full history';
+    });
+    stampAllonge();
     // serial number — inline, before the status badge (the record's unique reference)
     if($('dSerial')) $('dSerial').innerHTML='<b>S/N:</b> '+esc(n.id);
     // registry
@@ -1662,6 +1744,11 @@ main{display:block;margin-top:18px}
     renderDocAudit(n);
     show('note');
   }
+  /* Allonge "as of" stamp — refreshed right before printing so a paper
+     snapshot of the endorsement history is honest about when it was taken. */
+  function stampAllonge(){ var el=$('allongeAsOf'); if(el) el.textContent=fmtStamp(nowStamp()); }
+  window.addEventListener('beforeprint', stampAllonge);
+
   function renderDocAudit(rec){
     var a=rec.audit||[];
     $('docAudit').innerHTML = a.length? a.slice().reverse().map(function(e,idx){
