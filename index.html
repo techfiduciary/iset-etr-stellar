@@ -1786,7 +1786,7 @@ main{display:block;margin-top:18px}
       var sm=(se&&se.message)||'';
       if(/#2\b|NotInitialized/i.test(sm)) throw new Error('The escrow has no registered note yet — issue an ePN first, then settle it.');
       if(/#3\b|NotActive/i.test(sm)) throw new Error('This note is already settled or defaulted — issue a new ePN to run the flow again.');
-      if(/#4\b|Unauthorized/i.test(sm)) throw new Error('Not authorized on-chain — only the note’s current holder can endorse or settle it, and only the named endorsee can accept. This wallet holds no control over the note.');
+      if(/#4\b|Unauthorized/i.test(sm)) throw new Error('❌ Rejected by the contract — this wallet no longer controls this note. Control is exclusive: once endorsed and accepted, the previous holder cannot endorse or settle it again.');
       if(/#5\b|NotMatured/i.test(sm)) throw new Error('The note has not reached maturity yet.');
       if(/#6\b|NoPendingEndorsement/i.test(sm)) throw new Error('No endorsement offer is outstanding for this note — the holder must sign an endorsement first.');
       throw new Error('Simulation failed: '+sm.slice(0,140));
@@ -1844,11 +1844,16 @@ main{display:block;margin-top:18px}
     // (contract `lender`); the connected wallet signs as maker. Solo flow
     // (no payee address given) keeps the maker's wallet in both roles.
     var holder=note.holder_addr||me;
+    // On-chain maturity must match the document's stated maturity date — an
+    // explorer-visible mismatch (this was hardcoded to +90 days regardless of
+    // the form) would undercut the "provably accurate" claim.
+    var mdate=note.fields&&note.fields.maturity_date;
+    var maturityTs = mdate ? Math.floor(new Date(mdate+'T00:00:00Z').getTime()/1000) : (Math.floor(Date.now()/1000)+7776000);
     var args=[
       S.Address.fromString(me).toScVal(),
       S.Address.fromString(holder).toScVal(),
       S.nativeToScVal(BigInt(Math.round(note.amount)),{type:'i128'}),
-      S.nativeToScVal(BigInt(Math.floor(Date.now()/1000)+7776000),{type:'u64'}),
+      S.nativeToScVal(BigInt(maturityTs),{type:'u64'}),
       S.nativeToScVal(new Uint8Array(32),{type:'bytes'})
     ];
     return invokeContract('init',args,onStatus);
