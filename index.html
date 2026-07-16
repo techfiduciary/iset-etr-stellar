@@ -717,12 +717,16 @@ main{display:block;margin-top:18px}
   /* Network config. Mainnet is the production deployment of epn_escrow; testnet is
      the free interactive demo (friendbot-funded). Choice persists per device. */
   var NETWORKS={
-    testnet:{ label:'Testnet', contract:'CDTZDPLIB7OZ5LTCXAEY4GWUQTDKVGEGSSUWRF56MUBDNE5DSNSMXEGH',
+    /* endorse: the network's contract has the two-step endorsement upgrade
+       (endorse/accept). Testnet runs the upgraded contract; mainnet keeps the
+       pre-endorsement deployment until its own redeploy — the UI hides the
+       endorsement actions there rather than offer calls the contract lacks. */
+    testnet:{ label:'Testnet', contract:'CDZMFQBSZO44IX5TMHY55PYG6I3JOUEZFWSRMFJCUAF2AKWOOWX2H3IT',
       rpc:'https://soroban-testnet.stellar.org', passphrase:'Test SDF Network ; September 2015',
-      albedo:'testnet', expert:'testnet', friendbot:true },
+      albedo:'testnet', expert:'testnet', friendbot:true, endorse:true },
     mainnet:{ label:'Mainnet', contract:'CBDFHJ2V7YBQGF4PNDPTKAALHIE6PYRBL6PVAGMJA5OFFEUMHJYQLL7O',
       rpc:'https://mainnet.sorobanrpc.com', passphrase:'Public Global Stellar Network ; September 2015',
-      albedo:'public', expert:'public', friendbot:false }
+      albedo:'public', expert:'public', friendbot:false, endorse:false }
   };
   function readNet(){
     var q=new URLSearchParams(location.search).get('net');
@@ -776,6 +780,7 @@ main{display:block;margin-top:18px}
       form:[
         [{k:'maker',l:'Maker — who promises to pay *',ph:'Manila Trade, Inc.'},{k:'maker_tin',l:'Maker TIN *',t:'tin'}],
         [{k:'payee',l:'Pay to the order of — payee *',ph:'XYZ Manufacturing, Inc.'},{k:'payee_tin',l:'Payee TIN *',t:'tin'}],
+        [{k:'payee_addr',l:'Payee Stellar address — becomes the on-chain holder',t:'text',ph:'G… (leave empty to hold with your connected wallet)'}],
         [{k:'amount',l:'Principal amount *',t:'amount'}],
         [{k:'interest_rate',l:'Interest rate % p.a.',t:'num',ph:'5.5'},{k:'wht_rate',l:'Withholding tax %',t:'num',ph:'1'}],
         [{k:'issue_date',l:'Issue date *',t:'date'},{k:'maturity_date',l:'Maturity date *',t:'date',plus:90}],
@@ -1418,6 +1423,10 @@ main{display:block;margin-top:18px}
     if(!(amount>0)) return issueErr('Enter an amount / value greater than zero.');
     // derived
     if(CUR==='eBE' && f.tenor){ f.maturity_date=addDays(f.issue_date||today(), Number(f.tenor)||0); }
+    // Two-party ePN: the payee's own Stellar address becomes the on-chain holder
+    // (contract `lender`). Empty ⇒ the connected wallet holds it (solo flow).
+    if(f.payee_addr && !/^G[A-Z2-7]{55}$/.test(f.payee_addr))
+      return issueErr('The payee Stellar address must be a valid public key — G followed by 55 characters.');
     f.settlement_rail='Stellar USDC'; f.stellar_pubkey=window.STELLAR_PUBKEY||'';
     var holder = f[p2]||f[p1];
     var btn=$('issueBtn'); btn.disabled=true; btn.textContent='Issuing & signing…';
@@ -1432,7 +1441,10 @@ main{display:block;margin-top:18px}
         state:'ISSUED', version:1,
         status:body.status||'registered', sandbox:body.sandbox!==false, issued:f.issue_date,
         signature:body.signature, signature_alg:body.signature_alg||'ML-DSA-65',
-        record_hash:body.record_hash, audit_id:body.audit_id, audit:[] };
+        record_hash:body.record_hash, audit_id:body.audit_id, audit:[],
+        // chain-of-control roles: maker signs init; the payee's wallet (or the
+        // maker's own, solo flow) is the on-chain holder until endorsed onward
+        maker_addr:window.STELLAR_PUBKEY||'', holder_addr:(f.payee_addr||window.STELLAR_PUBKEY||''), pending_addr:null };
       await addAudit(rec,'Issued & signed');
       var list=store('epn-notes')||[]; list.unshift(rec); store('epn-notes',list.slice(0,80));
       toast(CUR+' issued & signed');
@@ -1562,13 +1574,28 @@ main{display:block;margin-top:18px}
       if(n.calc.hasInterest) fr+='<div class="small" style="color:#6b7686;margin-top:8px;line-height:1.5">Indicative — interest is computed to the stated maturity. It accrues to the actual settlement date; settling early reduces the interest proportionately.</div>';
       fr+='</div>'; html+=fr;
     }
+    // Chain of control — every transfer of the note's exclusive control, each
+    // backed by an on-chain transaction. The digital equivalent of the
+    // endorsements on the back of a paper note.
+    if(I.onchain && (n.chain&&n.chain.length || n.pending_addr)){
+      var ch='<div class="doc-sec"><div class="sh">Chain of Control</div>';
+      (n.chain||[]).forEach(function(c){
+        ch+='<div class="kv"><span class="k">'+esc(c.act)+'</span><span class="v mono">'+esc(trunc(c.addr))+
+          (c.tx?' · tx '+esc(String(c.tx).slice(0,12))+'…':'')+'</span></div>';
+      });
+      if(n.pending_addr) ch+='<div class="kv"><span class="k">Endorsement offered to</span><span class="v mono">'+esc(trunc(n.pending_addr))+' · awaiting acceptance</span></div>';
+      ch+='<div class="small" style="color:#6b7686;margin-top:8px;line-height:1.5">Control is exclusive — one holder at a time, enforced by the settlement contract on Stellar. Each transfer above is an authorized on-chain transaction.</div>';
+      ch+='</div>'; html+=ch;
+    }
     $('dSections').innerHTML=html;
     // serial number — inline, before the status badge (the record's unique reference)
     if($('dSerial')) $('dSerial').innerHTML='<b>S/N:</b> '+esc(n.id);
     // registry
     var holder=f.payee||f.beneficiary||f.consignee||f.buyer||f.depositor||issuerName;
+    if(n.accept_tx) holder+=' → endorsed';
+    var holderAddr=n.holder_addr||f.payee_addr||f.stellar_pubkey;
     $('dRef').textContent=n.id;
-    $('dHolder').textContent=holder+(f.stellar_pubkey?' · '+trunc(f.stellar_pubkey):'');
+    $('dHolder').textContent=holder+(holderAddr?' · '+trunc(holderAddr):'');
     $('dIssuer').textContent=issuerName;
     $('dStatus').textContent=(n.status||'registered')+(n.sandbox?' · sandbox':'');
     $('dIssuedOn').textContent=fmtDate(f.issue_date);
@@ -1599,11 +1626,32 @@ main{display:block;margin-top:18px}
 
   /* ── State-machine actions (per instrument) ── */
   function renderStateActions(rec){
-    var I=INSTR[rec.type], st=I.states, i=st.indexOf(rec.state), box=$('stateActions'), h='';
-    // On-chain settle for ePN
+    var I=INSTR[rec.type], st=I.states, i=st.indexOf(rec.state), box=$('stateActions'), h='', hint='';
+    // On-chain lifecycle for ePN — actions follow WHO is connected:
+    // holder → endorse / settle · named endorsee → accept · anyone else → read-only
     if(I.onchain){
-      var settled = !!rec.settle_tx;
-      h+='<button class="btn" id="settleBtn"'+(settled?' disabled':'')+'>'+(settled?'Settled ✓':'Endorse & Settle on Stellar')+'</button>';
+      var settled=!!rec.settle_tx;
+      var me=window.STELLAR_PUBKEY||'';
+      // legacy records (pre two-party) fall back to the wallet that registered them
+      var holder=rec.holder_addr||(rec.fields&&rec.fields.stellar_pubkey)||'';
+      var pending=rec.pending_addr||'';
+      if(settled){
+        h+='<button class="btn" disabled>Settled ✓</button>';
+      } else if(!me){
+        h+='<button class="btn" disabled title="Connect a wallet to act on this note">Connect wallet to act</button>';
+        if(holder) hint='Held by <span class="mono">'+esc(trunc(holder))+'</span>'+(pending?' · endorsement offered to <span class="mono">'+esc(trunc(pending))+'</span>':'');
+      } else if(CFG.endorse && pending && me===pending){
+        h+='<button class="btn" id="acceptBtn">Accept endorsement — take control</button>';
+        hint='Endorsement offered by the current holder <span class="mono">'+esc(trunc(holder))+'</span> — accepting makes this wallet the note’s exclusive holder.';
+      } else if(!holder || me===holder){
+        if(CFG.endorse) h+='<button class="btn ghost" id="endorseBtn">Endorse to…</button>';
+        h+='<button class="btn" id="settleBtn">Settle on Stellar</button>';
+        if(pending) hint='Endorsement offered to <span class="mono">'+esc(trunc(pending))+'</span> — awaiting their acceptance. Re-endorsing replaces the offer.';
+        else if(!CFG.endorse) hint='Endorsement runs on Testnet — the Mainnet contract upgrade is pending.';
+      } else {
+        h+='<button class="btn" disabled>Held by '+esc(trunc(holder))+'</button>';
+        hint='Only the holder’s wallet can endorse or settle this note'+(pending?' · endorsement pending acceptance by <span class="mono">'+esc(trunc(pending))+'</span>':'')+'. Connect the right wallet to act.';
+      }
     } else if(i>=0 && i<st.length-1){
       h+='<button class="btn" id="advBtn">Advance → '+esc(st[i+1])+'</button>';
     } else {
@@ -1612,8 +1660,11 @@ main{display:block;margin-top:18px}
     // Amendment — only when ISSUED
     var amendable = rec.state==='ISSUED';
     h+='<button class="btn ghost" id="amendBtn"'+(amendable?'':' disabled')+' title="'+(amendable?'Create a new version':'Only an ISSUED record can be amended')+'">Amend</button>';
+    if(hint) h+='<p class="small" style="flex-basis:100%;margin:6px 0 0;color:var(--muted)">'+hint+'</p>';
     box.innerHTML=h;
     if($('settleBtn')) $('settleBtn').addEventListener('click',onSettle);
+    if($('endorseBtn')) $('endorseBtn').addEventListener('click',function(){ showEndorsePanel(rec); });
+    if($('acceptBtn')) $('acceptBtn').addEventListener('click',function(){ onAccept(rec); });
     if($('advBtn')) $('advBtn').addEventListener('click',function(){ advanceState(rec); });
     if($('amendBtn')&&amendable) $('amendBtn').addEventListener('click',function(){ amendRecord(rec); });
     // chain status line reflects stored on-chain state
@@ -1735,8 +1786,9 @@ main{display:block;margin-top:18px}
       var sm=(se&&se.message)||'';
       if(/#2\b|NotInitialized/i.test(sm)) throw new Error('The escrow has no registered note yet — issue an ePN first, then settle it.');
       if(/#3\b|NotActive/i.test(sm)) throw new Error('This note is already settled or defaulted — issue a new ePN to run the flow again.');
-      if(/#4\b|Unauthorized/i.test(sm)) throw new Error('This escrow was registered by a different wallet — issue a new note with this wallet, then settle.');
+      if(/#4\b|Unauthorized/i.test(sm)) throw new Error('Not authorized on-chain — only the note’s current holder can endorse or settle it, and only the named endorsee can accept. This wallet holds no control over the note.');
       if(/#5\b|NotMatured/i.test(sm)) throw new Error('The note has not reached maturity yet.');
+      if(/#6\b|NoPendingEndorsement/i.test(sm)) throw new Error('No endorsement offer is outstanding for this note — the holder must sign an endorsement first.');
       throw new Error('Simulation failed: '+sm.slice(0,140));
     }
     onStatus&&onStatus('Waiting for '+(viaKit?walletLabel(wkind,(store('epn-wallet-label')||'your wallet')):(wkind==='albedo'?'Albedo':'Freighter'))+' signature…');
@@ -1788,9 +1840,13 @@ main{display:block;margin-top:18px}
 
   window.initEPNOnChain = async function(note,onStatus){
     var S=sdk(), me=window.STELLAR_PUBKEY;
+    // Two-party: the payee's wallet is registered as the on-chain holder
+    // (contract `lender`); the connected wallet signs as maker. Solo flow
+    // (no payee address given) keeps the maker's wallet in both roles.
+    var holder=note.holder_addr||me;
     var args=[
       S.Address.fromString(me).toScVal(),
-      S.Address.fromString(me).toScVal(),
+      S.Address.fromString(holder).toScVal(),
       S.nativeToScVal(BigInt(Math.round(note.amount)),{type:'i128'}),
       S.nativeToScVal(BigInt(Math.floor(Date.now()/1000)+7776000),{type:'u64'}),
       S.nativeToScVal(new Uint8Array(32),{type:'bytes'})
@@ -1801,6 +1857,16 @@ main{display:block;margin-top:18px}
     var S=sdk(), me=window.STELLAR_PUBKEY;
     var args=[ S.Address.fromString(me).toScVal(), S.nativeToScVal(new Uint8Array(64),{type:'bytes'}) ];
     return invokeContract('release_funds',args,onStatus);
+  };
+  window.endorseEPNOnChain = async function(to,onStatus){
+    var S=sdk(), me=window.STELLAR_PUBKEY;
+    var args=[ S.Address.fromString(me).toScVal(), S.Address.fromString(to).toScVal() ];
+    return invokeContract('endorse',args,onStatus);
+  };
+  window.acceptEPNOnChain = async function(onStatus){
+    var S=sdk(), me=window.STELLAR_PUBKEY;
+    var args=[ S.Address.fromString(me).toScVal() ];
+    return invokeContract('accept',args,onStatus);
   };
 
   function fundingHelp(){
@@ -1884,8 +1950,9 @@ main{display:block;margin-top:18px}
     if(!window.STELLAR_PUBKEY){ chainMsg('Connect your Stellar wallet to register this note on-chain.'); return; }
     chainMsg('Registering the note on Stellar…');
     window.initEPNOnChain(rec,chainMsg).then(async function(h){
-      rec.init_tx=h; rec.state='ENDORSED'; current=rec;
-      await addAudit(rec,'Endorsed on Stellar (init) · tx '+h.slice(0,12)); updateStoredNote(rec);
+      rec.init_tx=h; current=rec;   // stays ISSUED — ENDORSED is earned by an accepted endorsement
+      rec.chain=[{act:'Issued — control to',from:rec.maker_addr,addr:rec.holder_addr,tx:h}];
+      await addAudit(rec,'Registered on Stellar (init) · tx '+h.slice(0,12)); updateStoredNote(rec);
       chainMsg('✓ Registered on Stellar · '+txLink(h),'ok'); toast('Registered on Stellar');
       if(current&&current.id===rec.id){ renderStepper(rec); renderStateActions(rec); renderDocAudit(rec); }
     }).catch(function(e){
@@ -1901,7 +1968,11 @@ main{display:block;margin-top:18px}
     b.disabled=true; b.textContent='Submitting to Stellar...';
     try{
       var h=await window.settleEPNOnChain(chainMsg);
-      if(current){ current.settle_tx=h; current.state='SETTLED'; await addAudit(current,'Settled on Stellar (release_funds) · tx '+h.slice(0,12)); updateStoredNote(current); }
+      if(current){
+        current.settle_tx=h; current.state='SETTLED';
+        current.chain=(current.chain||[]).concat([{act:'Settled by holder',addr:window.STELLAR_PUBKEY||current.holder_addr,tx:h}]);
+        await addAudit(current,'Settled on Stellar (release_funds) · tx '+h.slice(0,12)); updateStoredNote(current);
+      }
       chainMsg('✓ <b>'+(current?current.type:'ePN')+' Settled on Stellar!</b> · '+txLink(h,'View on Stellar Explorer'),'ok');
       toast('Settled on Stellar');
       if(current){ renderStepper(current); renderStateActions(current); renderDocAudit(current); }
@@ -1911,6 +1982,61 @@ main{display:block;margin-top:18px}
       else if(e&&e.code==='BROADCAST_REJECTED') showBroadcastRejectedHelp();
       else chainMsg('Settlement failed — '+esc(e.message||'error'),'err');
       b.textContent=old; b.disabled=false;
+    }
+  }
+
+  /* ── Endorsement: offer (holder signs) → acceptance (endorsee signs) ──
+     Two distinct authorized acts, mirroring endorsement + delivery of a paper
+     note. Control is exclusive: once accepted, the previous holder can neither
+     settle nor endorse again — the contract rejects it, not just the UI. */
+  function handleChainErr(e,what){
+    if(e&&e.code==='NO_MAINNET_ACCOUNT') return showFundingHelp();
+    if(e&&e.code==='NET_MISMATCH') return showNetworkMismatchHelp(e);
+    if(e&&e.code==='BROADCAST_REJECTED') return showBroadcastRejectedHelp();
+    chainMsg(what+' failed — '+esc((e&&e.message)||'error'),'err');
+  }
+  function showEndorsePanel(rec){
+    if($('endorsePanel')) return;
+    var div=document.createElement('div');
+    div.id='endorsePanel';
+    div.style.cssText='flex-basis:100%;display:flex;gap:8px;flex-wrap:wrap;margin-top:8px';
+    div.innerHTML='<input class="input" id="endorseTo" placeholder="Endorsee Stellar address — G…" style="flex:1;min-width:220px" spellcheck="false">'+
+      '<button class="btn" id="endorseGo" style="flex:0 1 auto">Sign endorsement</button>';
+    $('stateActions').appendChild(div);
+    $('endorseGo').addEventListener('click',function(){ onEndorse(rec); });
+    $('endorseTo').focus();
+  }
+  async function onEndorse(rec){
+    var to=(($('endorseTo')||{}).value||'').trim();
+    if(!/^G[A-Z2-7]{55}$/.test(to)){ toast('Enter a valid Stellar address — G followed by 55 characters','err'); return; }
+    if(to===window.STELLAR_PUBKEY){ toast('That is the wallet already holding the note','err'); return; }
+    var b=$('endorseGo'); b.disabled=true; b.textContent='Signing…';
+    try{
+      var h=await window.endorseEPNOnChain(to,chainMsg);
+      rec.pending_addr=to; rec.endorse_tx=h;
+      await addAudit(rec,'Endorsement offered → '+trunc(to)+' (endorse) · tx '+h.slice(0,12));
+      chainMsg('✓ Endorsement signed — awaiting acceptance by '+esc(trunc(to))+' · '+txLink(h),'ok');
+      toast('Endorsement offered');
+      openNote(rec);
+    }catch(e){
+      handleChainErr(e,'Endorsement');
+      var b2=$('endorseGo'); if(b2){ b2.disabled=false; b2.textContent='Sign endorsement'; }
+    }
+  }
+  async function onAccept(rec){
+    var b=$('acceptBtn'); if(b){ b.disabled=true; b.textContent='Signing acceptance…'; }
+    try{
+      var h=await window.acceptEPNOnChain(chainMsg);
+      var prev=rec.holder_addr;
+      rec.holder_addr=window.STELLAR_PUBKEY; rec.pending_addr=null; rec.accept_tx=h; rec.state='ENDORSED';
+      rec.chain=(rec.chain||[]).concat([{act:'Endorsed — control to',from:prev,addr:window.STELLAR_PUBKEY,tx:h}]);
+      await addAudit(rec,'Endorsement accepted — holder is now '+trunc(window.STELLAR_PUBKEY)+' (accept) · tx '+h.slice(0,12));
+      chainMsg('✓ <b>Endorsement accepted on Stellar</b> — exclusive control transferred · '+txLink(h),'ok');
+      toast('Endorsement accepted — you hold this note');
+      openNote(rec);
+    }catch(e){
+      handleChainErr(e,'Acceptance');
+      if(b){ b.disabled=false; b.textContent='Accept endorsement — take control'; }
     }
   }
 
