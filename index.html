@@ -287,6 +287,13 @@ main{display:block;margin-top:18px}
 /* Long free-text rows (e.g. Remarks): stack label over value so the text spans the full note width instead of wrapping tall in the narrow right column. */
 .kv.kv-wide{flex-direction:column;align-items:stretch;gap:2px}
 .kv.kv-wide .v{text-align:left;font-weight:600;font-size:12.5px;line-height:1.45;word-break:normal;overflow-wrap:anywhere}
+/* Two-column sections: short label/value pairs (Parties, Terms, Financials,
+   Registry, Terms & Conditions) sit side by side instead of stacked, roughly
+   halving the section's row count. Sections with long mono values (Chain of
+   Control, signature) stay single-column — width is what makes those legible. */
+.doc-sec.doc-2col{display:grid;grid-template-columns:1fr 1fr;column-gap:16px}
+.doc-sec.doc-2col>.sh{grid-column:1/-1}
+.doc-sec.doc-2col .kv-wide{grid-column:1/-1}
 .doc-checks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .doc-chk{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:#1f7a33;background:rgba(31,122,51,.09);border:1px solid rgba(31,122,51,.3);border-radius:6px;padding:4px 9px}
 .doc-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;border-top:1px solid rgba(20,25,31,.12);background:#fbfcfe}
@@ -385,9 +392,10 @@ main{display:block;margin-top:18px}
   .doc-sub{font-size:9px}
   .doc-legal{font-size:10px;margin:6px auto 2px;line-height:1.4;max-width:70ch}
   .doc-amt{font-size:23px;margin:4px 0 0}
-  .doc-sec{margin-top:8px;padding-top:6px}
+  .doc-sec{margin-top:6px;padding-top:5px}
   .doc-sec .sh{font-size:8.5px;margin-bottom:1px}
-  .kv{padding:3px 0}
+  .doc-sec.doc-2col{column-gap:12px}
+  .kv{padding:2px 0}
   .kv .v{font-size:12px}
   .kv.kv-wide .v{font-size:11px;line-height:1.35}
   .doc-checks{margin-top:4px;gap:4px}
@@ -569,7 +577,7 @@ main{display:block;margin-top:18px}
           <p class="doc-legal" id="dLegal">—</p>
           <div class="doc-amt" id="dAmount">—</div>
           <div id="dSections"></div>
-          <div class="doc-sec"><div class="sh">Registry</div>
+          <div class="doc-sec doc-2col"><div class="sh">Registry</div>
             <div class="kv"><span class="k">Reference</span><span class="v mono" id="dRef">—</span></div>
             <div class="kv"><span class="k">Controller — Holder</span><span class="v" id="dHolder">—</span></div>
             <div class="kv"><span class="k">Issued by</span><span class="v" id="dIssuer">—</span></div>
@@ -789,8 +797,8 @@ main{display:block;margin-top:18px}
         [{k:'purpose',l:'Purpose of note *',t:'select',opts:['Working Capital','Trade Finance (Import/Export)','Inventory Financing','Equipment / Asset Purchase','General Business Operations']},{k:'remarks',l:'Remarks',t:'text',ph:'Reference or terms note'}]
       ],
       doc:[
-        {h:'Parties',rows:[{k:'Maker (Promisor)',f:'maker',tin:'maker_tin'},{k:'Pay to the order of:',f:'payee',tin:'payee_tin'}]},
-        {h:'Terms',rows:[{k:'Interest rate (p.a.)',f:'interest_rate',fmt:'pct',fb:'Non-interest-bearing'},{k:'Withholding tax',f:'wht_rate',fmt:'pct',opt:1},{k:'Maturity date',f:'maturity_date',fmt:'date'},{k:'Repayment',f:'repay_freq',fmt:'repayment'},{k:'Place of issue',f:'place'},{k:'Purpose',f:'purpose'},{k:'Remarks',f:'remarks',opt:1}]}
+        {h:'Parties',cols:2,rows:[{k:'Maker (Promisor)',f:'maker',tin:'maker_tin'},{k:'Pay to the order of:',f:'payee',tin:'payee_tin'}]},
+        {h:'Terms',cols:2,rows:[{k:'Interest rate (p.a.)',f:'interest_rate',fmt:'pct',fb:'Non-interest-bearing'},{k:'Withholding tax',f:'wht_rate',fmt:'pct',opt:1},{k:'Maturity date',f:'maturity_date',fmt:'date'},{k:'Repayment',f:'repay_freq',fmt:'repayment'},{k:'Place of issue',f:'place'},{k:'Purpose',f:'purpose'},{k:'Remarks',f:'remarks',opt:1}]}
       ]
     },
     eBE:{
@@ -1325,28 +1333,51 @@ main{display:block;margin-top:18px}
   }
   function pnum(v){ return Number(String(v==null?'':v).replace(/[,\s]/g,''))||0; }
   function termLabel(m){ return m>=12 ? (m/12).toFixed(m%12?2:0)+' yr' : m+' mo'; }
-  /* One source of truth for ePN money math. Bullet loan → SIMPLE interest for the actual term
-     (principal stays fully outstanding until the single settlement; amortization would understate
-     it). WHT applies to the INTEREST only (income), never to principal (return of capital). All
-     figures are indicative "if held to maturity" — interest accrues to the real settlement date. */
+  /* One source of truth for ePN money math.
+     Bullet (single payment at maturity) → SIMPLE interest for the full term: the principal stays
+     fully outstanding until the one settlement, so that's the correct base.
+     Installments → DECLINING BALANCE: each period's interest is simple interest on the principal
+     still outstanding for that period only, not an even split of the bullet total. Splitting a
+     flat total evenly overstates the effective rate on the outstanding balance once principal has
+     started paying down — RA 3765 s.4(7) requires the disclosed rate to be computed on the
+     outstanding unpaid balance, not the original principal, for every period after the first.
+     WHT applies to the INTEREST only (income), never to principal (return of capital). All figures
+     are indicative "if held to maturity" — interest accrues to the real settlement date. */
   function epnEconomics(f, principal, ccy){
     var ratePa=pnum(f&&f.interest_rate), whtp=pnum(f&&f.wht_rate);
     var months=monthsBetween(f&&f.issue_date, f&&f.maturity_date), years=months/12;
-    var interest=(principal>0)?principal*(ratePa/100)*years:0;
-    var wht=interest*(whtp/100);
-    var totalDue=principal+interest, netToPayee=totalDue-wht;
     var freq=(f&&f.repay_freq)||'Single payment at maturity';
     var per={'Monthly':1,'Quarterly':3,'Semi-annual':6,'Annual':12}[freq];
     var bullet=!per, n=bullet?1:Math.max(1,Math.round(months/per));
+    var principalEach=principal/n;
+    var interest, interestEach, interestFirst, interestLast;
+    if(bullet || !(principal>0) || !(ratePa>0)){
+      interest=(principal>0)?principal*(ratePa/100)*years:0;
+      interestEach=interest; interestFirst=interest; interestLast=interest;
+    } else {
+      var periodYears=per/12, outstanding=principal, total=0;
+      for(var i=0;i<n;i++){ total+=outstanding*(ratePa/100)*periodYears; outstanding-=principalEach; }
+      interest=total;
+      interestFirst=principal*(ratePa/100)*periodYears;
+      interestLast=(principal-principalEach*(n-1))*(ratePa/100)*periodYears;
+      interestEach=interest/n;   // average — display uses interestFirst/interestLast instead
+    }
+    var wht=interest*(whtp/100);
+    var totalDue=principal+interest, netToPayee=totalDue-wht;
     return { ratePa:ratePa, whtp:whtp, months:months, years:years, interest:interest, wht:wht,
       totalDue:totalDue, netToPayee:netToPayee, freq:freq, bullet:bullet, n:n,
-      principal:principal, ccy:ccy, principalEach:principal/n, interestEach:interest/n };
+      principal:principal, ccy:ccy, principalEach:principalEach, interestEach:interestEach,
+      interestFirst:interestFirst, interestLast:interestLast, declining:!bullet };
   }
   function repaymentLine(f, principal, ccy){
     var ec=epnEconomics(f, principal, ccy);
     if(ec.bullet) return 'Single payment at maturity (bullet)';
     var pay=ec.n+(ec.n===1?' payment':' payments');
-    if(ec.interest>0) return ec.freq+' · '+pay+' of '+ccy+' '+fmtAmt(ec.principalEach)+' principal + '+ccy+' '+fmtAmt(ec.interestEach)+' interest';
+    if(ec.interest>0){
+      if(ec.n>1 && Math.abs(ec.interestFirst-ec.interestLast)>0.01)
+        return ec.freq+' · '+pay+' of '+ccy+' '+fmtAmt(ec.principalEach)+' principal + declining interest ('+ccy+' '+fmtAmt(ec.interestFirst)+' → '+ccy+' '+fmtAmt(ec.interestLast)+')';
+      return ec.freq+' · '+pay+' of '+ccy+' '+fmtAmt(ec.principalEach)+' principal + '+ccy+' '+fmtAmt(ec.interestEach)+' interest';
+    }
     return ec.freq+' · '+pay+' of '+ccy+' '+fmtAmt(ec.principalEach)+' (principal)';
   }
   function computeCalc(){
@@ -1367,7 +1398,7 @@ main{display:block;margin-top:18px}
       if(ec.interest>0){
         calc.hasInterest=true;
         calc.rows.push(['Principal',amount]);
-        calc.rows.push(['Interest ('+ec.ratePa+'% p.a. × '+termLabel(ec.months)+')', ec.interest]);
+        calc.rows.push(['Interest ('+ec.ratePa+'% p.a.'+(ec.declining&&ec.n>1?', declining balance':' × '+termLabel(ec.months))+')', ec.interest]);
         if(ec.wht>0){
           calc.rows.push(['Total due at maturity', ec.totalDue]);
           calc.rows.push(['Withholding tax on interest ('+ec.whtp+'%)', -ec.wht]);
@@ -1552,14 +1583,14 @@ main{display:block;margin-top:18px}
     // sections
     var html='';
     I.doc.forEach(function(sec){
-      html+='<div class="doc-sec"><div class="sh">'+esc(sec.h)+'</div>';
+      html+='<div class="doc-sec'+(sec.cols===2?' doc-2col':'')+'"><div class="sh">'+esc(sec.h)+'</div>';
       sec.rows.forEach(function(r){
         if(r.opt && !(f[r.f])) return;
         var tin = r.tin&&f[r.tin] ? '<small>TIN: '+esc(f[r.tin])+'</small>' : '';
         var vhtml = fmtField(n,r);
-        // Long free-text (remarks/purpose/description) or any value past ~44 chars → full-width stacked row.
-        var isWide = /^remarks$/.test(String(r.f||''));   // only Remarks spans full width; all else stays in the right column
-        html+='<div class="kv'+(isWide?' kv-wide':'')+'"><span class="k">'+esc(r.k)+'</span><span class="v">'+vhtml+tin+'</span></div>';
+        // All fields render as a normal one-line row, Remarks included — kept
+        // to the same compact half-width treatment as everything else.
+        html+='<div class="kv"><span class="k">'+esc(r.k)+'</span><span class="v">'+vhtml+tin+'</span></div>';
       });
       if(sec.checks && f[sec.checks]){ var items=String(f[sec.checks]).split(', ').filter(Boolean);
         if(items.length) html+='<div style="margin-top:6px">'+(sec.checksLabel?'<div class="k" style="margin-bottom:4px">'+esc(sec.checksLabel)+'</div>':'')+'<div class="doc-checks">'+items.map(function(x){return '<span class="doc-chk">✓ '+esc(x)+'</span>';}).join('')+'</div></div>'; }
@@ -1567,12 +1598,25 @@ main{display:block;margin-top:18px}
     });
     // financial breakdown (WHT / VAT / FX)
     if(n.calc && ((n.calc.rows&&n.calc.rows.length)||n.calc.settle_ccy)){
-      var fr='<div class="doc-sec"><div class="sh">Financials</div>';
+      var fr='<div class="doc-sec doc-2col"><div class="sh">Financials</div>';
       (n.calc.rows||[]).forEach(function(r){ fr+='<div class="kv"><span class="k">'+esc(r[0])+'</span><span class="v">'+n.currency+' '+fmtAmt(Math.abs(r[1]))+(r[1]<0?' (less)':'')+'</span></div>'; });
       if(n.calc.grand) fr+='<div class="kv"><span class="k">'+esc(n.calc.grand[0])+'</span><span class="v">'+n.currency+' '+fmtAmt(n.calc.grand[1])+'</span></div>';
       if(n.calc.settle_ccy) fr+='<div class="kv"><span class="k">Settlement currency</span><span class="v">'+esc(n.calc.settle_ccy)+(n.calc.settle_amount?' · ≈ '+fmtAmt(n.calc.settle_amount)+' @ '+esc(n.calc.fx_rate):'')+'</span></div>';
-      if(n.calc.hasInterest) fr+='<div class="small" style="color:#6b7686;margin-top:8px;line-height:1.5">Indicative — interest is computed to the stated maturity. It accrues to the actual settlement date; settling early reduces the interest proportionately.</div>';
+      if(n.calc.hasInterest) fr+='<div class="small" style="grid-column:1/-1;color:#6b7686;margin-top:8px;line-height:1.5">Indicative — interest is computed to the stated maturity. It accrues to the actual settlement date; settling early reduces the interest proportionately.</div>';
       fr+='</div>'; html+=fr;
+    }
+    // Terms & Conditions — MORB-pattern disclosures, worded to match what this
+    // contract actually enforces rather than reused bank-template boilerplate:
+    // e.g. "Pretermination: Allowed" because release_funds has no maturity
+    // gate, not the paper-template default of "No Pretermination."
+    if(I.code==='ePN'){
+      var tc='<div class="doc-sec doc-2col"><div class="sh">Terms &amp; Conditions</div>';
+      tc+='<div class="kv"><span class="k">Computation of Yield</span><span class="v">'+(n.calc&&n.calc.hasInterest?'Simple, non-compounded, on the stated principal':'Non-interest-bearing')+'</span></div>';
+      tc+='<div class="kv"><span class="k">Pretermination</span><span class="v">Allowed — reduces interest proportionately</span></div>';
+      tc+='<div class="kv"><span class="k">Renewal</span><span class="v">No automatic renewal</span></div>';
+      tc+='<div class="kv"><span class="k">Collateral</span><span class="v">No collateral</span></div>';
+      tc+='<div class="kv"><span class="k">Liquidated Damages</span><span class="v">None stipulated</span></div>';
+      tc+='</div>'; html+=tc;
     }
     // Chain of control — every transfer of the note's exclusive control, each
     // backed by an on-chain transaction. The digital equivalent of the
@@ -1584,7 +1628,7 @@ main{display:block;margin-top:18px}
           (c.tx?' · tx '+esc(String(c.tx).slice(0,12))+'…':'')+'</span></div>';
       });
       if(n.pending_addr) ch+='<div class="kv"><span class="k">Endorsement offered to</span><span class="v mono">'+esc(trunc(n.pending_addr))+' · awaiting acceptance</span></div>';
-      ch+='<div class="small" style="color:#6b7686;margin-top:8px;line-height:1.5">Control is exclusive — one holder at a time, enforced by the settlement contract on Stellar. Each transfer above is an authorized on-chain transaction.</div>';
+      ch+='<div class="small" style="color:#6b7686;margin-top:8px;line-height:1.5">Control is exclusive — one holder at a time, enforced by the settlement contract on Stellar. Each transfer above is an authorized on-chain transaction — the electronic equivalent of possession, which the Personal Property Security Act (RA 11057, §19) ranks above registration when perfecting a security interest in an instrument.</div>';
       ch+='</div>'; html+=ch;
     }
     $('dSections').innerHTML=html;
