@@ -29,6 +29,17 @@
 <script src="https://cdn.jsdelivr.net/npm/@albedo-link/intent@0.12.0/lib/albedo.intent.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@13.0.0/dist/stellar-sdk.min.js" defer></script>
 <script src="https://iset.finance/assets/qr.js" defer></script>
+<!-- Stellar Wallets Kit — one modal for all Stellar wallets (Freighter · xBull · Albedo · Rabet · Lobstr · Hana · HOT).
+     Self-hosted on our own domain (assets/swk/) — no runtime CDN dependency, so it loads the same everywhere.
+     The Freighter/Albedo scripts above stay only as a last-resort fallback. -->
+<script type="module">
+  try{
+    var m = await import('/assets/swk/stellar-wallets-kit.bundle.mjs');
+    window.SWK = { StellarWalletsKit:m.StellarWalletsKit, allowAllModules:m.allowAllModules, WalletNetwork:m.WalletNetwork, FREIGHTER_ID:m.FREIGHTER_ID };
+    window.SWK_READY = true;
+    window.dispatchEvent(new Event('swk-ready'));
+  }catch(e){ window.SWK_FAILED = true; console.warn('Stellar Wallets Kit failed to load — falling back to built-in Freighter/Albedo picker.', e); }
+</script>
 <style>
 :root{
   --bg:#0b1f3a; --bg2:#0e2748; --card:#10294b; --line:#1d3a63;
@@ -47,22 +58,18 @@ html{scrollbar-gutter:stable}
 html,body{margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI Variable","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 .app{max-width:560px;margin:0 auto;padding:0 14px 40px;min-height:100vh}
-.topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 4px;position:sticky;top:0;background:linear-gradient(var(--bg),rgba(11,31,58,.86));backdrop-filter:blur(6px);z-index:5}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 4px;position:sticky;top:10px;border-radius:22px;background:linear-gradient(var(--bg),rgba(11,31,58,.86));z-index:5;transition:background .25s ease,backdrop-filter .25s ease,box-shadow .25s ease,padding .25s ease}
 .brand{display:flex;align-items:center;gap:9px}
 .brandtext{display:flex;flex-direction:column;line-height:1.05}
 .logo{border-radius:7px;display:block}
 .brand .mark{font-weight:800;letter-spacing:.06em}
 .brand .sub{font-size:11px;color:var(--muted)}
 .banner{background:#3a2a0e;border:1px solid #6b4e15;color:#f6d98a;border-radius:10px;padding:7px 10px;font-size:12px;text-align:center;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
-.netswitch{display:inline-flex;border:1px solid #6b4e15;border-radius:999px;overflow:hidden;flex:0 0 auto}
-.netswitch button{background:transparent;border:0;color:#f6d98a;font-size:11px;font-weight:700;padding:3px 10px;cursor:pointer;line-height:1.4}
-.netswitch button.on{background:#f6d98a;color:#3a2a0e}
-html[data-theme="light"] .netswitch{border-color:#e3c878}
-html[data-theme="light"] .netswitch button{color:#7a5a12}
-html[data-theme="light"] .netswitch button.on{background:#7a5a12;color:#fdf3d6}
-.tabs{display:flex;gap:6px;margin:6px 0 14px}
-.tabs button{flex:1;background:var(--bg2);color:var(--muted);border:1px solid var(--line);padding:9px;border-radius:10px;font-weight:600;cursor:pointer}
-.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tabs{display:flex;gap:2px;margin:0;background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:4px}
+.tabs button{flex:0 0 auto;display:flex;align-items:center;gap:6px;background:transparent;border:0;color:#111;font-size:13px;font-weight:700;padding:9px 16px;border-radius:999px;cursor:pointer}
+.tabs button.on{color:#fff;background:#0022b4}
+.tabicon{display:none}
+.tabicon svg{width:18px;height:18px;display:block}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
 .card h2{margin:0 0 4px;font-size:18px}
 .muted{color:var(--muted);font-size:13px;margin:0 0 12px}
@@ -78,6 +85,7 @@ a.btn{text-decoration:none;display:inline-block;text-align:center}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn.sm{padding:7px 10px;font-size:12px}
 .connect{display:flex;align-items:center;gap:8px}
+#connectBox .btn{background:#0022b4;color:#fff;border-radius:999px;padding:9px 20px}
 .pill{display:inline-flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:5px 10px;font-size:12px;font-family:ui-monospace,monospace;cursor:pointer}
 .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
 .result{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
@@ -97,6 +105,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 .foot{color:var(--muted);font-size:11px;text-align:center;margin-top:20px;line-height:1.6}
 .footlinks{margin-bottom:8px}
 .footlinks button{background:none;border:0;color:var(--soft);font-size:11px;cursor:pointer;padding:0}
+main{display:block;margin-top:18px}
 .hero{background:linear-gradient(150deg,#2a5fd0,#0b1f3a 92%);border-radius:18px;padding:20px 16px 16px;margin-bottom:8px;box-shadow:0 12px 30px rgba(8,20,40,.45)}
 .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.92);font-weight:700}
 .hero h1{font-size:30px;line-height:1.08;margin:10px 0 8px;font-weight:800;letter-spacing:-.02em;min-height:66px;color:#fff}
@@ -153,6 +162,37 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 .toasts{position:fixed;left:0;right:0;bottom:18px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;z-index:50}
 .toast{background:#10294b;border:1px solid #2b62b6;color:#eaf1fb;font-size:13px;padding:10px 16px;border-radius:10px;max-width:90%;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .toast.err{border-color:#7a2f2f;background:#3a1d1d;color:#f6caca}
+.wsheet-scrim{position:fixed;inset:0;background:rgba(4,10,22,.55);backdrop-filter:blur(3px);z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;transition:opacity .16s ease}
+.wsheet-scrim.on{opacity:1}
+.wsheet{width:100%;max-width:380px;max-height:82vh;overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);padding:18px;transform:translateY(8px) scale(.98);transition:transform .18s cubic-bezier(.2,.8,.2,1)}
+.wsheet-scrim.on .wsheet{transform:none}
+.wsheet h3{margin:0 0 2px;font-size:16px}
+.wsheet .wsub{margin:0 0 14px;color:var(--muted);font-size:12px}
+.wopt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;transition:border-color .12s,background .12s}
+.wopt+.wopt{margin-top:9px}
+.wopt:hover{border-color:var(--accent);background:var(--card)}
+.wopt:disabled{opacity:.5;cursor:not-allowed}
+.wopt .wicon{width:38px;height:38px;border-radius:10px;flex:0 0 38px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff}
+.wopt .wtx{min-width:0;flex:1}
+.wopt .wtx b{display:block;font-size:14px}
+.wopt .wtx span{display:block;font-size:11px;color:var(--muted);margin-top:1px}
+.wopt .wtag{font-size:10px;font-weight:700;color:var(--ok);border:1px solid rgba(52,211,153,.4);background:rgba(52,211,153,.12);border-radius:999px;padding:2px 7px;white-space:nowrap}
+.wopt .wtag.warn{color:var(--warn);border-color:rgba(246,217,138,.4);background:rgba(246,217,138,.12)}
+.wsheet .wcancel{width:100%;margin-top:12px;background:transparent;border:0;color:var(--muted);font-size:12px;cursor:pointer;padding:6px}
+.wsheet .wnote{margin:12px 0 0;font-size:10px;color:var(--muted);line-height:1.5;text-align:center;border-top:1px dashed var(--line);padding-top:10px}
+/* Wallet rows with per-network chips — pick the wallet AND its network in one action,
+   so a mismatched combo is never even offered. */
+.wopt2{display:flex;align-items:center;gap:11px;width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.wopt2+.wopt2{margin-top:8px}
+.wopt2.disabled{opacity:.5}
+.wopt2 .wicon2{width:32px;height:32px;border-radius:9px;flex:0 0 32px;object-fit:cover;background:#fff}
+.wopt2 .w2body{min-width:0;flex:1}
+.wopt2 .w2name{font-size:13.5px;font-weight:700}
+.wopt2 .wnet-chips{display:flex;gap:6px;margin-top:5px}
+.wnet-chip{font:inherit;font-size:11px;font-weight:700;border-radius:7px;padding:4px 9px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.wnet-chip:hover{border-color:var(--accent);color:var(--accent)}
+.wnet-chip.mainnet{border-color:rgba(246,217,138,.5);color:var(--warn)}
+.wnet-chip.mainnet:hover{background:rgba(246,217,138,.12)}
 .contractbox{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px}
 .contractbox img{width:30px;height:30px;border-radius:7px;background:#fff;padding:3px;flex:0 0 30px}
 .contractbox b{font-size:13px;display:block}
@@ -222,11 +262,14 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 .chk input{accent-color:var(--accent);width:15px;height:15px}
 
 /* ── The note document (white paper, both themes) ── */
-.doc{background:#fff;color:#13202e;border:1px solid rgba(20,25,31,.12);border-radius:14px;overflow:hidden;box-shadow:0 18px 50px rgba(5,15,35,.35);margin:14px 0}
+.doc{position:relative;background:#fff;color:#13202e;border:1px solid rgba(20,25,31,.12);border-radius:14px;overflow:hidden;box-shadow:0 18px 50px rgba(5,15,35,.35);margin:14px 0}
 .doc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:3px solid #f5c518}
 .doc-head .co{display:flex;align-items:center;gap:10px;min-width:0}
 .doc-head .colo{width:38px;height:38px;border-radius:9px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none}
 .doc-head .con{font-size:16px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-head-r{display:flex;align-items:center;gap:8px;flex:none}
+.doc-serial{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.06em;color:#6b7686;white-space:nowrap}
+.doc-serial b{color:#33414f;font-weight:600}
 .doc-body{padding:18px}
 .doc-kick{text-align:center;font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#6b7686}
 .doc-title{text-align:center;font-size:19px;font-weight:800;letter-spacing:.02em;margin-top:3px}
@@ -241,6 +284,9 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 .kv .v{font-size:13.5px;font-weight:700;text-align:right;word-break:break-word}
 .kv .v small{display:block;font-weight:500;font-size:11px;color:#6b7686}
 .kv .v.mono{font-family:ui-monospace,monospace;font-size:11px;font-weight:500}
+/* Long free-text rows (e.g. Remarks): stack label over value so the text spans the full note width instead of wrapping tall in the narrow right column. */
+.kv.kv-wide{flex-direction:column;align-items:stretch;gap:2px}
+.kv.kv-wide .v{text-align:left;font-weight:600;font-size:12.5px;line-height:1.45;word-break:normal;overflow-wrap:anywhere}
 .doc-checks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .doc-chk{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:#1f7a33;background:rgba(31,122,51,.09);border:1px solid rgba(31,122,51,.3);border-radius:6px;padding:4px 9px}
 .doc-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;border-top:1px solid rgba(20,25,31,.12);background:#fbfcfe}
@@ -267,17 +313,46 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   .industries{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:72%;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:8px;scrollbar-width:none}
   .industries::-webkit-scrollbar{display:none}
   .industries .icard{scroll-snap-align:start}
-  .tabs{overflow-x:auto;scrollbar-width:none}
-  .tabs::-webkit-scrollbar{display:none}
-  .tabs button{flex:1 0 auto;padding-left:16px;padding-right:16px}
+  /* Portfolio + Six Instruments — one swipeable row instead of a wrapping grid */
+  .stats{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:56%;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
+  .stats::-webkit-scrollbar{display:none}
+  .stat{scroll-snap-align:start}
+  .instgrid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:56%;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
+  .instgrid::-webkit-scrollbar{display:none}
+  .instcard{scroll-snap-align:start}
   .row{flex-direction:column;gap:0}
+  /* App-style bottom nav — translucent rounded blue glass, icon + label, floating above content */
+  .app{padding-bottom:104px}
+  .tabs{
+    position:fixed;left:12px;right:12px;bottom:14px;
+    display:flex;justify-content:space-around;align-items:center;gap:2px;
+    margin:0;padding:7px 6px calc(7px + env(safe-area-inset-bottom));
+    background:rgba(37,86,200,.41);
+    backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);
+    border:1px solid rgba(255,255,255,.24);border-radius:30px;
+    box-shadow:0 12px 34px rgba(5,15,35,.35);z-index:40
+  }
+  .tabs button{flex:1 1 0;flex-direction:column;justify-content:center;gap:2px;color:rgba(255,255,255,.92);font-size:10px;padding:7px 2px;border-radius:999px;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .tabs button.on{color:#fff;background:rgba(255,255,255,.28);text-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .tabicon{display:flex}
+  html[data-theme="light"] .tabs{background:rgba(170,185,248,.13);border-color:rgba(4,32,151,.18)}
+  html[data-theme="light"] .tabs button{color:#042097;text-shadow:none}
+  html[data-theme="light"] .tabs button.on{color:#042097;background:#c9d9eb;text-shadow:none}
+}
+/* ── Tablet + desktop: header nav, glass on scroll ── */
+@media (min-width:601px){
+  .topbar.scrolled{
+    background:rgba(37,86,200,.62);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    padding:10px 16px;
+    box-shadow:0 10px 34px rgba(5,15,35,.28)
+  }
+  .topbar.scrolled .tabs{background:rgba(255,255,255,.96)}
 }
 /* ── Desktop: a real, wider web app ── */
 @media (min-width:900px){
   .app{max-width:1160px;padding:0 24px 60px}
   .topbar{padding:16px 4px}
-  .banner{max-width:100%}
-  .tabs{max-width:760px;margin-left:auto;margin-right:auto}
   /* every tab uses the full app width — uniform with the dashboard */
   .doc{margin:14px 0}
   .hero{padding:34px 32px 26px}
@@ -290,7 +365,39 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   .invlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px}
   .issue-2col{display:grid;grid-template-columns:1fr;gap:0}
 }
-@media print{.topbar,.tabs,.banner,.actions,.foot,.no-print,.stepper,.audit,.idbadge{display:none!important}body{background:#fff}.app{max-width:none;padding:0}.doc{box-shadow:none;border:none;margin:0}}
+@media print{
+  .topbar,.tabs,.banner,.actions,.foot,.no-print,.stepper,.audit,.idbadge{display:none!important}
+  html,body{background:#fff;height:auto!important;margin:0!important}
+  /* Start at the very top — no forced full-page height (that pushed content to the middle
+     and left a large blank below), no letting the doc get bumped to a fresh page. */
+  .app{max-width:none;padding:0!important;margin:0!important;min-height:0!important;height:auto!important}
+  #view-note{margin:0!important}
+  .doc{box-shadow:none;border:none;margin:0!important;page-break-inside:auto}
+  /* Vertical tightening — fit the whole instrument on one bond page.
+     Do NOT force a page size — let the paper the user selects (Letter, Long/Folio, A4)
+     drive it. Forcing size:A4 made the printer center the A4 box on differently-sized
+     paper, leaving gaps above and below. */
+  @page{size:auto;margin:9mm}
+  .doc-head{padding:9px 16px;border-bottom-width:2px}
+  .doc-body{padding:10px 16px}
+  .doc-kick{font-size:8.5px}
+  .doc-title{font-size:16px}
+  .doc-sub{font-size:9px}
+  .doc-legal{font-size:10px;margin:6px auto 2px;line-height:1.4;max-width:70ch}
+  .doc-amt{font-size:23px;margin:4px 0 0}
+  .doc-sec{margin-top:8px;padding-top:6px}
+  .doc-sec .sh{font-size:8.5px;margin-bottom:1px}
+  .kv{padding:3px 0}
+  .kv .v{font-size:12px}
+  .kv.kv-wide .v{font-size:11px;line-height:1.35}
+  .doc-checks{margin-top:4px;gap:4px}
+  .doc-chk{padding:2px 6px;font-size:9px}
+  .doc-id{padding:6px 16px}
+  .doc-foot{padding:9px 16px}
+  .doc-sig{padding:7px 16px 9px}
+  .doc-sig .line{font-size:7.5px;margin-bottom:3px}
+  .doc-sig .sig{font-size:7px;line-height:1.4}
+}
 </style>
 </head><body>
 <div class="app">
@@ -303,6 +410,24 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
         <span class="sub">by ISET · on Stellar</span>
       </div>
     </div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="home" class="on">
+        <span class="tabicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9"/></svg></span>
+        <span class="tablabel">Home</span>
+      </button>
+      <button data-tab="issue">
+        <span class="tabicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
+        <span class="tablabel">Issue</span>
+      </button>
+      <button data-tab="notes">
+        <span class="tabicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span>
+        <span class="tablabel">Docs</span>
+      </button>
+      <button data-tab="verify">
+        <span class="tabicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
+        <span class="tablabel">Verify</span>
+      </button>
+    </nav>
     <div class="topactions">
       <button class="iconbtn" id="themeBtn" aria-label="Toggle light or dark theme" title="Toggle theme"></button>
       <button class="iconbtn" id="brandBtn" aria-label="Your brand" title="Your brand">
@@ -313,15 +438,6 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       </div>
     </div>
   </header>
-
-  <div class="banner"><span id="bannerText">Stellar testnet · records are sandbox — fully signed &amp; verifiable, no legal effect.</span><span class="netswitch" id="netSwitch" role="group" aria-label="Network"><button type="button" data-net="testnet">Testnet</button><button type="button" data-net="mainnet">Mainnet</button></span></div>
-
-  <nav class="tabs" id="tabs">
-    <button data-tab="home" class="on">Dashboard</button>
-    <button data-tab="issue">Issue</button>
-    <button data-tab="notes">Documents</button>
-    <button data-tab="verify">Verify</button>
-  </nav>
 
   <main>
     <!-- ── DASHBOARD / HOME ── -->
@@ -337,7 +453,6 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
         <div class="trust">
           <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Post-quantum signed</span>
           <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg> MLETR control</span>
-          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/></svg> Settles on Stellar</span>
         </div>
       </div>
 
@@ -442,7 +557,10 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       <div class="doc" id="docCard">
         <div class="doc-head">
           <div class="co"><span class="colo" id="dLogo">MT</span><span class="con" id="dCompany">—</span></div>
-          <span class="docbadge live" id="dBadge">ISSUED</span>
+          <div class="doc-head-r">
+            <span class="doc-serial" id="dSerial"></span>
+            <span class="docbadge live" id="dBadge">ISSUED</span>
+          </div>
         </div>
         <div class="doc-body">
           <div class="doc-kick" id="dKick">Electronic Promissory Note</div>
@@ -656,18 +774,18 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       onchain:true,
       legal:'For value received, the maker unconditionally promises to pay the payee the principal sum stated under the terms below:',
       form:[
-        [{k:'maker',l:'Maker — who promises to pay',ph:'Manila Trade, Inc.'},{k:'maker_tin',l:'Maker TIN',t:'tin'}],
-        [{k:'payee',l:'Pay to the order of — payee',ph:'XYZ Manufacturing, Inc.'},{k:'payee_tin',l:'Payee TIN',t:'tin'}],
-        [{k:'amount',l:'Principal amount',t:'amount'}],
+        [{k:'maker',l:'Maker — who promises to pay *',ph:'Manila Trade, Inc.'},{k:'maker_tin',l:'Maker TIN *',t:'tin'}],
+        [{k:'payee',l:'Pay to the order of — payee *',ph:'XYZ Manufacturing, Inc.'},{k:'payee_tin',l:'Payee TIN *',t:'tin'}],
+        [{k:'amount',l:'Principal amount *',t:'amount'}],
         [{k:'interest_rate',l:'Interest rate % p.a.',t:'num',ph:'5.5'},{k:'wht_rate',l:'Withholding tax %',t:'num',ph:'1'}],
-        [{k:'issue_date',l:'Issue date',t:'date'},{k:'maturity_date',l:'Maturity date',t:'date',plus:90}],
-        [{k:'place',l:'Place of issue',t:'text',def:'Philippines'},{k:'purpose',l:'Purpose of note',t:'select',opts:['Working Capital','Trade Finance (Import/Export)','Inventory Financing','Equipment / Asset Purchase','General Business Operations']}],
+        [{k:'issue_date',l:'Issue date *',t:'date'},{k:'maturity_date',l:'Maturity date *',t:'date',plus:90}],
+        [{k:'repay_freq',l:'Repayment frequency *',t:'select',opts:['Single payment at maturity','Monthly','Quarterly','Semi-annual','Annual']},{k:'place',l:'Place of issue *',t:'text',def:'Philippines'}],
         [{k:'settle',l:'Settlement currency',t:'settle'}],
-        [{k:'remarks',l:'Remarks (optional)',t:'text',ph:'Reference or terms note'}]
+        [{k:'purpose',l:'Purpose of note *',t:'select',opts:['Working Capital','Trade Finance (Import/Export)','Inventory Financing','Equipment / Asset Purchase','General Business Operations']},{k:'remarks',l:'Remarks',t:'text',ph:'Reference or terms note'}]
       ],
       doc:[
         {h:'Parties',rows:[{k:'Maker (Promisor)',f:'maker',tin:'maker_tin'},{k:'Pay to the order of:',f:'payee',tin:'payee_tin'}]},
-        {h:'Terms',rows:[{k:'Interest rate (p.a.)',f:'interest_rate',fmt:'pct',fb:'Non-interest-bearing'},{k:'Withholding tax',f:'wht_rate',fmt:'pct',opt:1},{k:'Maturity date',f:'maturity_date',fmt:'date'},{k:'Place of issue',f:'place'},{k:'Purpose',f:'purpose'},{k:'Remarks',f:'remarks',opt:1}]}
+        {h:'Terms',rows:[{k:'Interest rate (p.a.)',f:'interest_rate',fmt:'pct',fb:'Non-interest-bearing'},{k:'Withholding tax',f:'wht_rate',fmt:'pct',opt:1},{k:'Maturity date',f:'maturity_date',fmt:'date'},{k:'Repayment',f:'repay_freq',fmt:'repayment'},{k:'Place of issue',f:'place'},{k:'Purpose',f:'purpose'},{k:'Remarks',f:'remarks',opt:1}]}
       ]
     },
     eBE:{
@@ -816,26 +934,42 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 
   /* ── Network switcher (banner toggle + Home segment share one handler) ── */
   function paintNet(){
-    document.querySelectorAll('#netSeg button, #netSwitch button').forEach(function(b){ b.classList.toggle('on',b.dataset.net===NET); });
-    $('netNote').innerHTML = (NET==='mainnet')
+    document.querySelectorAll('#netSeg button').forEach(function(b){ b.classList.toggle('on',b.dataset.net===NET); });
+    if($('netNote')) $('netNote').innerHTML = (NET==='mainnet')
       ? 'Mainnet is live. Issuing and settling here submit <b>real transactions</b> and spend real XLM from your wallet.'
       : 'Testnet is free — accounts are auto-funded, and nothing costs real money. Switch to mainnet to transact for real.';
-    $('bannerText').innerHTML = (NET==='mainnet')
-      ? 'Stellar <b>mainnet</b> · real transactions · records stay sandbox — no legal effect.'
-      : 'Stellar testnet · free &amp; auto-funded · records are sandbox — no legal effect.';
   }
   function switchNet(want){
     if(want===NET) return;
     if(want==='mainnet' && !confirm('Switch to Stellar mainnet?\n\nIssuing and settling will submit real transactions and spend real XLM from your connected wallet.')) return;
     store('epn-net',want); location.search='?net='+want;
   }
-  document.querySelectorAll('#netSeg button, #netSwitch button').forEach(function(b){
+  /* In-memory network switch (no reload) — used to auto-adopt the connected wallet's network. */
+  function applyNet(want){
+    if((want!=='mainnet'&&want!=='testnet')||want===NET) return false;
+    NET=want; CFG=NETWORKS[NET]; RPC_URL=CFG.rpc; window.SOROBAN_CONTRACT_ID=CFG.contract;
+    store('epn-net',want);
+    if(kit&&kit.setNetwork){ try{ kit.setNetwork(CFG.passphrase); }catch(e){} }
+    paintNet();
+    if(window.checkMainnetFunding) window.checkMainnetFunding();
+    if(typeof refreshWalletStat==='function') refreshWalletStat();
+    return true;
+  }
+  document.querySelectorAll('#netSeg button').forEach(function(b){
     b.addEventListener('click',function(){ switchNet(b.dataset.net); });
   });
   paintNet();
 
+  /* Desktop header glass-on-scroll — mobile has no top-nav glass, only the bottom bar does. */
+  (function(){
+    var tb=$('topbar')||document.querySelector('.topbar'); if(!tb) return;
+    function paint(){ tb.classList.toggle('scrolled', window.scrollY>8); }
+    window.addEventListener('scroll', paint, {passive:true});
+    paint();
+  })();
+
   /* ── Rotating hero line ── */
-  var LINES=['The record is the instrument.','Signed. Registered. Verifiable.','Six documents, one signing root.','Settles on Stellar.'];
+  var LINES=['The record is the instrument.','Signed. Registered. Verifiable.','Six documents, one signing root.','Settles on Stellar network.'];
   var li=0; setInterval(function(){ li=(li+1)%LINES.length; var el=$('heroLine'); if(!el)return; el.classList.remove('hero-rot'); void el.offsetWidth; el.textContent=LINES[li]; el.classList.add('hero-rot'); },3600);
 
   /* ── Instrument pickers ── */
@@ -862,11 +996,17 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 
   /* ── Connect (Freighter → Albedo) ── */
   function refreshWalletStat(){ if(!$('view-home').hidden && $('statsGrid')) renderDashboard(); }
-  function setConnected(pk){
-    window.STELLAR_PUBKEY=pk; store('epn-wallet',pk);
-    $('connectBox').innerHTML='<span class="pill" id="walletPill" title="'+esc(pk)+' — click to disconnect"><span class="dot"></span>'+esc(trunc(pk))+'</span>';
+  var WALLET_LABELS={ freighter:'Freighter', albedo:'Albedo', xbull:'xBull', rabet:'Rabet', lobstr:'Lobstr', hana:'Hana', hot:'HOT' };
+  function walletLabel(kind,fallback){ return WALLET_LABELS[kind]||fallback||(kind?kind.charAt(0).toUpperCase()+kind.slice(1):'Wallet'); }
+  function setConnected(pk,kind,label){
+    kind=kind||window.STELLAR_WALLET||'freighter';
+    window.STELLAR_PUBKEY=pk; window.STELLAR_WALLET=kind;
+    store('epn-wallet',pk); store('epn-wallet-kind',kind);
+    label=label||walletLabel(kind);
+    store('epn-wallet-label',label);
+    $('connectBox').innerHTML='<span class="pill" id="walletPill" title="'+esc(pk)+' · '+esc(label)+' — click to disconnect"><span class="dot"></span>'+esc(trunc(pk))+'</span>';
     $('walletPill').addEventListener('click',function(){
-      if(confirm('Disconnect this wallet from the app?')){ window.STELLAR_PUBKEY=null; store('epn-wallet',null); mountConnectBtn(); toast('Wallet disconnected'); refreshWalletStat(); }
+      if(confirm('Disconnect this wallet from the app?')){ window.STELLAR_PUBKEY=null; window.STELLAR_WALLET=null; window.STELLAR_VIA_KIT=false; store('epn-wallet',null); store('epn-wallet-kind',null); store('epn-wallet-label',null); if(kit&&kit.disconnect){try{kit.disconnect();}catch(e){}} if(typeof clearNetHint==='function')clearNetHint(); mountConnectBtn(); toast('Wallet disconnected'); refreshWalletStat(); }
     });
     if(window.checkMainnetFunding) window.checkMainnetFunding();
     refreshWalletStat();
@@ -875,40 +1015,180 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     $('connectBox').innerHTML='<button class="btn sm" id="connectBtn">Connect</button>';
     $('connectBtn').addEventListener('click',connect);
   }
-  async function connect(){
+  function freighterInstalled(){ return !!window.freighterApi; }
+  async function connectFreighter(){
     var api=window.freighterApi;
-    if(api){
-      try{
-        var installed=true;
-        if(api.isConnected){ try{ var ic=await api.isConnected(); installed=(ic&&typeof ic==='object')?ic.isConnected!==false:ic!==false; }catch(e){ installed=true; } }
-        if(installed){
-          var addr=null;
-          if(api.requestAccess){ var r=await api.requestAccess(); if(r&&r.error)throw new Error(r.error.message||r.error); addr=(r&&typeof r==='object')?(r.address||r.publicKey):r; }
-          if(!addr&&api.getAddress){ var g=await api.getAddress(); addr=(g&&g.address)||g; }
-          if(!addr&&api.getPublicKey) addr=await api.getPublicKey();
-          if(addr&&typeof addr==='string'&&addr[0]==='G'){ setConnected(addr); toast('Wallet connected · '+trunc(addr)); return; }
-        }
-      }catch(e){
-        var m=(e&&e.message)||'';
-        if(/reject|denied|declin/i.test(m)){ toast('Connect cancelled','err'); return; }
+    if(!api){ toast('Freighter not found — install it at freighter.app','err'); window.open('https://www.freighter.app/','_blank','noopener'); return; }
+    try{
+      if(api.isConnected){ try{ await api.isConnected(); }catch(e){} }
+      var addr=null;
+      if(api.requestAccess){ var r=await api.requestAccess(); if(r&&r.error)throw new Error(r.error.message||r.error); addr=(r&&typeof r==='object')?(r.address||r.publicKey):r; }
+      if(!addr&&api.getAddress){ var g=await api.getAddress(); addr=(g&&g.address)||g; }
+      if(!addr&&api.getPublicKey) addr=await api.getPublicKey();
+      if(addr&&typeof addr==='string'&&addr[0]==='G'){ setConnected(addr,'freighter'); toast('Freighter connected · '+trunc(addr)); return; }
+      throw new Error('no key returned');
+    }catch(e){
+      var m=(e&&e.message)||'';
+      toast(/reject|denied|declin/i.test(m)?'Connect cancelled':'Freighter connect failed','err');
+    }
+  }
+  async function connectAlbedo(){
+    if(!(window.albedo&&window.albedo.publicKey)){ toast('Albedo unavailable — check your connection','err'); return; }
+    try{
+      var res=await window.albedo.publicKey({});
+      if(res&&res.pubkey&&res.pubkey[0]==='G'){ setConnected(res.pubkey,'albedo'); toast('Albedo connected · '+trunc(res.pubkey)); return; }
+      throw new Error('no key returned');
+    }catch(e2){
+      var m=(e2&&e2.message)||'';
+      toast(/reject|denied|declin|closed/i.test(m)?'Connect cancelled':'Albedo connect failed','err');
+    }
+  }
+  /* ── Stellar Wallets Kit (all wallets) — primary path; the sheet below is the fallback ── */
+  var kit=null;
+  function getKit(){
+    if(kit) return kit;
+    if(!(window.SWK&&window.SWK.StellarWalletsKit)) return null;
+    try{
+      kit=new window.SWK.StellarWalletsKit({
+        network: CFG.passphrase,                 // WalletNetwork string === our passphrase
+        selectedWalletId: window.SWK.FREIGHTER_ID,
+        modules: window.SWK.allowAllModules()
+      });
+    }catch(e){ console.warn('Kit init failed',e); kit=null; }
+    return kit;
+  }
+  /* Which network(s) each wallet reliably works on. Albedo and xBull are request-scoped (they sign
+     for whatever network the app asks) so both work. Freighter has its own Testnet/Mainnet switch
+     in its settings — offer both, matching what it actually supports. HOT Wallet hasn't been
+     confirmed to honor a network switch, so it stays Mainnet-only until verified otherwise. */
+  function netSupportFor(name){
+    var n=(name||'').toLowerCase();
+    if(n.indexOf('albedo')>=0) return ['testnet','mainnet'];
+    if(n.indexOf('xbull')>=0) return ['testnet','mainnet'];
+    if(n.indexOf('freighter')>=0) return ['testnet','mainnet'];
+    if(n.indexOf('hot')>=0) return ['mainnet'];
+    return ['mainnet'];   // conservative default for any other wallet we haven't verified
+  }
+  var NET_LABEL={testnet:'Testnet',mainnet:'Mainnet'};
+  /* Connect flow, built on the Kit: pick the wallet AND its network in one action, so a mismatched
+     combo is never even offered — this replaces relying on the Kit's own generic modal. */
+  async function connectWithChips(){
+    var k=getKit(); if(!k) return false;
+    var wallets;
+    try{ wallets=await k.getSupportedWallets(); }catch(e){ return false; }
+    if(!wallets||!wallets.length) return false;
+    wallets=wallets.slice().sort(function(a,b){ return (b.isAvailable?1:0)-(a.isAvailable?1:0); });
+    if($('walletSheet'))return true;
+    var scrim=document.createElement('div');
+    scrim.className='wsheet-scrim'; scrim.id='walletSheet';
+    var rows=wallets.map(function(w){
+      if(!w.isAvailable){
+        return '<div class="wopt2 disabled"><img class="wicon2" src="'+esc(w.icon||'')+'" alt=""><div class="w2body"><div class="w2name">'+esc(w.name)+'</div></div><span class="wtag warn">Not available</span></div>';
       }
+      var nets=netSupportFor(w.name);
+      var chips=nets.map(function(net){ return '<button type="button" class="wnet-chip'+(net==='mainnet'?' mainnet':'')+'" data-id="'+esc(w.id)+'" data-name="'+esc(w.name)+'" data-net="'+net+'">'+NET_LABEL[net]+'</button>'; }).join('');
+      return '<div class="wopt2"><img class="wicon2" src="'+esc(w.icon||'')+'" alt=""><div class="w2body"><div class="w2name">'+esc(w.name)+'</div><div class="wnet-chips">'+chips+'</div></div></div>';
+    }).join('');
+    scrim.innerHTML=
+      '<div class="wsheet" role="dialog" aria-modal="true" aria-label="Connect a Stellar wallet">'+
+        '<h3>Connect a wallet</h3>'+
+        '<p class="wsub">Pick a wallet and the network to use — connecting only shares your public Stellar address. You approve every transaction inside your wallet.</p>'+
+        rows+
+        '<button class="wcancel" id="wCancel">Cancel</button>'+
+      '</div>';
+    document.body.appendChild(scrim);
+    requestAnimationFrame(function(){ scrim.classList.add('on'); });
+    scrim.addEventListener('click',function(ev){ if(ev.target===scrim)closeWalletSheet(); });
+    document.addEventListener('keydown',walletSheetEsc);
+    $('wCancel').addEventListener('click',closeWalletSheet);
+    scrim.querySelectorAll('.wnet-chip').forEach(function(chip){
+      chip.addEventListener('click',async function(){
+        var id=chip.dataset.id, name=chip.dataset.name, want=chip.dataset.net;
+        if(want==='mainnet' && want!==NET && !confirm('Switch to Stellar mainnet?\n\nIssuing and settling will submit real transactions and spend real XLM from your connected wallet.')) return;
+        applyNet(want);
+        closeWalletSheet();
+        try{
+          k.setWallet(id);
+          var res=await k.getAddress();
+          var addr=(res&&res.address)||res;
+          if(!(addr&&typeof addr==='string'&&addr[0]==='G')){ toast('No address returned by wallet','err'); return; }
+          window.STELLAR_VIA_KIT=true;
+          setConnected(addr, id, name);
+          toast(name+' connected · '+trunc(addr)+' · '+NET_LABEL[want]);
+        }catch(e){ var m=(e&&e.message)||''; toast(/reject|denied|declin|cancel/i.test(m)?'Connect cancelled':'Connect failed — '+m.slice(0,80),'err'); }
+      });
+    });
+    return true;
+  }
+  function closeWalletSheet(){ var s=$('walletSheet'); if(!s)return; s.classList.remove('on'); setTimeout(function(){ if(s.parentNode)s.remove(); },180); document.removeEventListener('keydown',walletSheetEsc); }
+  function walletSheetEsc(ev){ if(ev.key==='Escape')closeWalletSheet(); }
+  function swkReady(){ return !!(window.SWK&&window.SWK.StellarWalletsKit); }
+  async function connect(){
+    // Wait briefly for the (self-hosted) Kit module to finish loading before deciding — a slow
+    // load must not silently drop the user to the two-wallet fallback.
+    if(!swkReady()&&!window.SWK_FAILED){
+      var btn=$('connectBtn'); var restore=btn?btn.textContent:''; if(btn){ btn.textContent='Loading…'; btn.disabled=true; }
+      var t0=Date.now();
+      while(!swkReady()&&!window.SWK_FAILED&&Date.now()-t0<5000){ await new Promise(function(r){setTimeout(r,120);}); }
+      if(btn){ btn.textContent=restore||'Connect'; btn.disabled=false; }
     }
-    if(window.albedo&&window.albedo.publicKey){
-      try{
-        var res=await window.albedo.publicKey({});
-        if(res&&res.pubkey&&res.pubkey[0]==='G'){ setConnected(res.pubkey); toast('Wallet connected · '+trunc(res.pubkey)); return; }
-        throw new Error('no key returned');
-      }catch(e2){ toast('Connect cancelled','err'); return; }
-    }
-    toast('No Stellar wallet found — install Freighter (desktop) at freighter.app','err');
-    window.open('https://www.freighter.app/','_blank','noopener');
+    if(await connectWithChips()) return;   // wallet + network chips, built on the Kit
+    connectLegacySheet();               // fallback: built-in Freighter/Albedo picker
+  }
+  function connectLegacySheet(){
+    if($('walletSheet'))return;
+    var fr=freighterInstalled();
+    var scrim=document.createElement('div');
+    scrim.className='wsheet-scrim'; scrim.id='walletSheet';
+    scrim.innerHTML=
+      '<div class="wsheet" role="dialog" aria-modal="true" aria-label="Connect a Stellar wallet">'+
+        '<h3>Connect a wallet</h3>'+
+        '<p class="wsub">Choose how to connect. Connecting only shares your public Stellar address — it never moves funds. You approve every transaction inside your wallet.</p>'+
+        '<button class="wopt" id="wFreighter"'+(fr?'':' disabled')+'>'+
+          '<span class="wicon" style="background:#1c1c28">✦</span>'+
+          '<span class="wtx"><b>Freighter</b><span>Browser extension · desktop</span></span>'+
+          (fr?'<span class="wtag">Detected</span>':'<span class="wtag warn">Not installed</span>')+
+        '</button>'+
+        '<button class="wopt" id="wAlbedo">'+
+          '<span class="wicon" style="background:#5b3df5">A</span>'+
+          '<span class="wtx"><b>Albedo</b><span>Web wallet · works on mobile</span></span>'+
+          '<span class="wtag">Web</span>'+
+        '</button>'+
+        (fr?'':'<p class="wnote">No Freighter? Use Albedo above — it opens in a secure popup, nothing to install. Or get Freighter at freighter.app.</p>')+
+        '<button class="wcancel" id="wCancel">Cancel</button>'+
+      '</div>';
+    document.body.appendChild(scrim);
+    requestAnimationFrame(function(){ scrim.classList.add('on'); });
+    scrim.addEventListener('click',function(ev){ if(ev.target===scrim)closeWalletSheet(); });
+    document.addEventListener('keydown',walletSheetEsc);
+    $('wCancel').addEventListener('click',closeWalletSheet);
+    var wf=$('wFreighter'); if(wf&&fr) wf.addEventListener('click',function(){ closeWalletSheet(); connectFreighter(); });
+    else if(wf) wf.addEventListener('click',function(){ window.open('https://www.freighter.app/','_blank','noopener'); });
+    $('wAlbedo').addEventListener('click',function(){ closeWalletSheet(); connectAlbedo(); });
   }
   $('connectBtn').addEventListener('click',connect);
   (function(){ var prev=store('epn-wallet'); if(!prev)return;
+    var kind=store('epn-wallet-kind')||'freighter';
+    var label=store('epn-wallet-label')||walletLabel(kind);
+    // Kit-managed wallets: re-init the kit (once loaded) and restore the session.
+    function restoreViaKit(){
+      var k=getKit(); if(!k) return false;
+      try{ if(k.setWallet) k.setWallet(kind); }catch(e){}
+      k.getAddress().then(function(res){
+        var a=(res&&res.address)||res;
+        if(a&&a[0]==='G'){ window.STELLAR_VIA_KIT=true; setConnected(a,kind,label); }
+      }).catch(function(){ /* wallet no longer authorized — user can reconnect */ });
+      return true;
+    }
+    if(window.SWK){ if(restoreViaKit()) return; }
+    else { window.addEventListener('swk-ready',function(){ restoreViaKit(); }, {once:true}); }
+    // Legacy fallback paths (Kit unavailable):
+    if(kind==='albedo'){ setConnected(prev,'albedo'); return; }
     var tries=0,iv=setInterval(function(){ tries++;
+      if(window.STELLAR_PUBKEY){ clearInterval(iv); return; }
       var api=window.freighterApi;
       if(api&&api.getAddress){ clearInterval(iv);
-        api.getAddress().then(function(g){ var a=(g&&g.address)||g; if(a&&a[0]==='G')setConnected(a); }).catch(function(){});
+        api.getAddress().then(function(g){ var a=(g&&g.address)||g; if(a&&a[0]==='G'&&!window.STELLAR_PUBKEY)setConnected(a,'freighter'); }).catch(function(){});
       } else if(tries>20){ clearInterval(iv); }
     },250);
   })();
@@ -984,7 +1264,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   function amountRow(f){
     var I=INSTR[CUR];
     var amtCell = f.hideAmt ? '' : '<div><label class="lbl">'+esc(I.valueLabel||f.l||'Amount')+'</label><input class="input" id="f_amount" inputmode="decimal" placeholder="'+esc(f.ph||'550000')+'"></div>';
-    return '<div class="row">'+amtCell+'<div><label class="lbl">Base currency</label><select class="input" id="f_currency">'+ccyOpts('PHP')+'</select></div></div>';
+    return '<div class="row">'+amtCell+'<div><label class="lbl">Base currency *</label><select class="input" id="f_currency">'+ccyOpts('PHP')+'</select></div></div>';
   }
   function checksRow(f){
     return '<div><label class="lbl">'+esc(f.l)+'</label><div class="checks" id="f_'+f.k+'">'+
@@ -992,7 +1272,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   }
   function settleRow(f){
     // Settlement runs on Stellar, so the settlement asset is a Stellar asset.
-    return '<div class="row" id="settleWrap"><div><label class="lbl">Settlement currency</label><select class="input" id="f_settle_ccy"><option value="USDC" selected>USDC — Stellar USDC</option><option value="XLM">XLM — Stellar Lumen</option></select></div>'+
+    return '<div class="row" id="settleWrap"><div><label class="lbl">Settlement currency *</label><select class="input" id="f_settle_ccy"><option value="USDC" selected>USDC — Stellar USDC</option><option value="XLM">XLM — Stellar Lumen</option></select></div>'+
       '<div id="fxCell" style="display:none"><label class="lbl">Indicative FX rate</label><input class="input" id="f_fx_rate" inputmode="decimal" placeholder="e.g. 0.0180"></div></div>';
   }
   function renderForm(){
@@ -1028,6 +1308,42 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       '<div class="banner" style="margin:10px 0 0">Preview only — this entry issues <b>ePN</b>. The other five instruments are built and visible, but locked for now.</div>';
   }
   function num(id){ var el=$(id); return el?Number((el.value||'').replace(/[,\s]/g,'')):0; }
+  /* Repayment schedule (indicative, informational only — the on-chain escrow still settles as a
+     single release; this is the disclosed contractual cadence, not an enforced amortization). */
+  function monthsBetween(a,b){
+    try{ var d1=new Date(a+'T00:00:00'), d2=new Date(b+'T00:00:00');
+      if(isNaN(d1.getTime())||isNaN(d2.getTime())) return 0;
+      var m=(d2.getFullYear()-d1.getFullYear())*12+(d2.getMonth()-d1.getMonth());
+      if(d2.getDate()<d1.getDate()) m--;
+      return Math.max(0,m);
+    }catch(e){ return 0; }
+  }
+  function pnum(v){ return Number(String(v==null?'':v).replace(/[,\s]/g,''))||0; }
+  function termLabel(m){ return m>=12 ? (m/12).toFixed(m%12?2:0)+' yr' : m+' mo'; }
+  /* One source of truth for ePN money math. Bullet loan → SIMPLE interest for the actual term
+     (principal stays fully outstanding until the single settlement; amortization would understate
+     it). WHT applies to the INTEREST only (income), never to principal (return of capital). All
+     figures are indicative "if held to maturity" — interest accrues to the real settlement date. */
+  function epnEconomics(f, principal, ccy){
+    var ratePa=pnum(f&&f.interest_rate), whtp=pnum(f&&f.wht_rate);
+    var months=monthsBetween(f&&f.issue_date, f&&f.maturity_date), years=months/12;
+    var interest=(principal>0)?principal*(ratePa/100)*years:0;
+    var wht=interest*(whtp/100);
+    var totalDue=principal+interest, netToPayee=totalDue-wht;
+    var freq=(f&&f.repay_freq)||'Single payment at maturity';
+    var per={'Monthly':1,'Quarterly':3,'Semi-annual':6,'Annual':12}[freq];
+    var bullet=!per, n=bullet?1:Math.max(1,Math.round(months/per));
+    return { ratePa:ratePa, whtp:whtp, months:months, years:years, interest:interest, wht:wht,
+      totalDue:totalDue, netToPayee:netToPayee, freq:freq, bullet:bullet, n:n,
+      principal:principal, ccy:ccy, principalEach:principal/n, interestEach:interest/n };
+  }
+  function repaymentLine(f, principal, ccy){
+    var ec=epnEconomics(f, principal, ccy);
+    if(ec.bullet) return 'Single payment at maturity (bullet)';
+    var pay=ec.n+(ec.n===1?' payment':' payments');
+    if(ec.interest>0) return ec.freq+' · '+pay+' of '+ccy+' '+fmtAmt(ec.principalEach)+' principal + '+ccy+' '+fmtAmt(ec.interestEach)+' interest';
+    return ec.freq+' · '+pay+' of '+ccy+' '+fmtAmt(ec.principalEach)+' (principal)';
+  }
   function computeCalc(){
     var I=INSTR[CUR], ccy=$('f_currency')?$('f_currency').value:'PHP';
     var calc={ currency:ccy, rows:[] };
@@ -1039,9 +1355,23 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       calc.rows.push(['Subtotal',sub],['VAT ('+(num('f_vat_rate')||0)+'%)',vat],['Withholding ('+(num('f_wht_rate')||0)+'%)',-wht]);
       calc.grand=['Total payable',total];
     } else if(CUR==='ePN'){
-      calc.amount=amount; calc.big=amount;
-      var whtp=num('f_wht_rate');
-      if(whtp>0){ var w=amount*(whtp/100); calc.rows.push(['Principal',amount],['Withholding tax ('+whtp+'%)',-w]); calc.grand=['Net proceeds',amount-w]; }
+      calc.amount=amount; calc.big=amount;   // headline stays the principal (face value)
+      var pf={ interest_rate:($('f_interest_rate')||{}).value, wht_rate:($('f_wht_rate')||{}).value, issue_date:($('f_issue_date')||{}).value, maturity_date:($('f_maturity_date')||{}).value, repay_freq:($('f_repay_freq')||{}).value };
+      var ec=epnEconomics(pf, amount, ccy);
+      calc.repay = repaymentLine(pf, amount, ccy);
+      if(ec.interest>0){
+        calc.hasInterest=true;
+        calc.rows.push(['Principal',amount]);
+        calc.rows.push(['Interest ('+ec.ratePa+'% p.a. × '+termLabel(ec.months)+')', ec.interest]);
+        if(ec.wht>0){
+          calc.rows.push(['Total due at maturity', ec.totalDue]);
+          calc.rows.push(['Withholding tax on interest ('+ec.whtp+'%)', -ec.wht]);
+          calc.grand=['Net to payee', ec.netToPayee];
+        } else {
+          calc.grand=['Total due at maturity', ec.totalDue];
+        }
+      }
+      // Non-interest-bearing: no breakdown, and WHT is correctly ignored (no income to tax).
     } else {
       calc.amount=amount; calc.big=amount;
     }
@@ -1056,10 +1386,12 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     (calc.rows||[]).forEach(function(r){ rows.push('<div><span>'+esc(r[0])+'</span><span>'+calc.currency+' '+fmtAmt(Math.abs(r[1]))+(r[1]<0?' −':'')+'</span></div>'); });
     var grand = calc.grand ? '<div class="grand"><span>'+esc(calc.grand[0])+'</span><span>'+calc.currency+' '+fmtAmt(calc.grand[1])+'</span></div>' :
                 (calc.big? '<div class="grand"><span>Amount</span><span>'+calc.currency+' '+fmtAmt(calc.big)+'</span></div>':'');
+    var repay = calc.repay ? '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px"><span>Repayment</span><span>'+esc(calc.repay)+'</span></div>' : '';
     var fx = (calc.settle_ccy&&calc.settle_amount) ? '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px"><span>≈ Settlement in '+calc.settle_ccy+' @ '+calc.fx_rate+'</span><span>'+calc.settle_ccy+' '+fmtAmt(calc.settle_amount)+'</span></div>' :
              (calc.settle_ccy? '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px"><span>Settlement currency</span><span>'+calc.settle_ccy+' · enter indicative rate</span></div>':'');
-    if(!rows.length && !calc.grand && !calc.big && !fx){ box.style.display='none'; return; }
-    box.style.display='block'; box.innerHTML=rows.join('')+grand+fx;
+    var inote = calc.hasInterest ? '<div class="small" style="color:var(--muted);margin-top:8px;line-height:1.5">Indicative — interest is computed to the stated maturity. It accrues to the actual settlement date; settling early reduces the interest proportionately.</div>' : '';
+    if(!rows.length && !calc.grand && !calc.big && !fx && !repay){ box.style.display='none'; return; }
+    box.style.display='block'; box.innerHTML=rows.join('')+grand+repay+fx+inote;
   }
 
   function issueErr(m){ var e=$('issueErr'); if(!m){e.style.display='none';return;} e.textContent=m; e.style.display='block'; }
@@ -1178,6 +1510,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     if(r.fmt==='date') return esc(fmtDate(v));
     if(r.fmt==='pct') return v?esc(v)+'%':(r.fb?esc(r.fb):'—');
     if(r.fmt==='tenor') return v?('At '+esc(v)+' days · matures '+esc(fmtDate(f.maturity_date))):'—';
+    if(r.fmt==='repayment') return esc(repaymentLine(f, Number(rec.amount)||0, rec.currency));
     return v?esc(v):(r.fb?esc(r.fb):'—');
   }
   function docBadgeClass(rec){ var st=INSTR[rec.type].states, i=st.indexOf(rec.state); return i>=st.length-1?'live':(i>=1?'mid':'mid'); }
@@ -1211,7 +1544,10 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       sec.rows.forEach(function(r){
         if(r.opt && !(f[r.f])) return;
         var tin = r.tin&&f[r.tin] ? '<small>TIN: '+esc(f[r.tin])+'</small>' : '';
-        html+='<div class="kv"><span class="k">'+esc(r.k)+'</span><span class="v">'+fmtField(n,r)+tin+'</span></div>';
+        var vhtml = fmtField(n,r);
+        // Long free-text (remarks/purpose/description) or any value past ~44 chars → full-width stacked row.
+        var isWide = /^remarks$/.test(String(r.f||''));   // only Remarks spans full width; all else stays in the right column
+        html+='<div class="kv'+(isWide?' kv-wide':'')+'"><span class="k">'+esc(r.k)+'</span><span class="v">'+vhtml+tin+'</span></div>';
       });
       if(sec.checks && f[sec.checks]){ var items=String(f[sec.checks]).split(', ').filter(Boolean);
         if(items.length) html+='<div style="margin-top:6px">'+(sec.checksLabel?'<div class="k" style="margin-bottom:4px">'+esc(sec.checksLabel)+'</div>':'')+'<div class="doc-checks">'+items.map(function(x){return '<span class="doc-chk">✓ '+esc(x)+'</span>';}).join('')+'</div></div>'; }
@@ -1223,9 +1559,12 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       (n.calc.rows||[]).forEach(function(r){ fr+='<div class="kv"><span class="k">'+esc(r[0])+'</span><span class="v">'+n.currency+' '+fmtAmt(Math.abs(r[1]))+(r[1]<0?' (less)':'')+'</span></div>'; });
       if(n.calc.grand) fr+='<div class="kv"><span class="k">'+esc(n.calc.grand[0])+'</span><span class="v">'+n.currency+' '+fmtAmt(n.calc.grand[1])+'</span></div>';
       if(n.calc.settle_ccy) fr+='<div class="kv"><span class="k">Settlement currency</span><span class="v">'+esc(n.calc.settle_ccy)+(n.calc.settle_amount?' · ≈ '+fmtAmt(n.calc.settle_amount)+' @ '+esc(n.calc.fx_rate):'')+'</span></div>';
+      if(n.calc.hasInterest) fr+='<div class="small" style="color:#6b7686;margin-top:8px;line-height:1.5">Indicative — interest is computed to the stated maturity. It accrues to the actual settlement date; settling early reduces the interest proportionately.</div>';
       fr+='</div>'; html+=fr;
     }
     $('dSections').innerHTML=html;
+    // serial number — inline, before the status badge (the record's unique reference)
+    if($('dSerial')) $('dSerial').innerHTML='<b>S/N:</b> '+esc(n.id);
     // registry
     var holder=f.payee||f.beneficiary||f.consignee||f.buyer||f.depositor||issuerName;
     $('dRef').textContent=n.id;
@@ -1333,7 +1672,45 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   async function invokeContract(fn,args,onStatus){
     var S=sdk(); if(!S) throw new Error('Stellar SDK still loading — try again in a few seconds');
     if(!window.STELLAR_PUBKEY) throw new Error('Connect your Stellar wallet first (top right)');
-    if(!(window.albedo&&window.albedo.tx)) throw new Error('Albedo wallet library unavailable');
+    var wkind=window.STELLAR_WALLET||'freighter';
+    var viaKit=!!(window.STELLAR_VIA_KIT&&getKit());
+    if(viaKit){
+      // App toggle is authoritative; the Kit signs for CFG.passphrase (passed at sign time). No network flipping.
+      // But block BEFORE signing if the wallet's own network differs — some wallets (Freighter) refuse
+      // and show their own dialog, but others (seen with HOT Wallet) sign silently for their own active
+      // network anyway, and the mismatch only surfaces as an opaque broadcast rejection afterward.
+      // Catching it here, by name, up front, avoids that.
+      try{
+        var kn=await kit.getNetwork();
+        var kPass=kn&&(kn.networkPassphrase||kn.network);
+        if(kPass&&kPass!==CFG.passphrase){
+          var kWantLabel=(NET==='mainnet')?'Mainnet':'Testnet';
+          var kHaveLabel=/Public Global Stellar/i.test(kPass)?'Main Net':(/Test SDF/i.test(kPass)?'Test Net':'a different network');
+          var kName=walletLabel(wkind, store('epn-wallet-label'));
+          var kme=new Error(kName+'’s own network is set to '+kHaveLabel+', but this app is set to '+kWantLabel+'.');
+          kme.code='NET_MISMATCH'; kme.want=kWantLabel; kme.have=kHaveLabel; kme.raw=(kn&&kn.network)||kPass; kme.walletName=kName;
+          throw kme;
+        }
+      }catch(ke){ if(ke&&ke.code==='NET_MISMATCH')throw ke; /* wallet has no exposed network (e.g. Albedo/xBull) — fine, proceed */ }
+    } else if(wkind==='albedo'){
+      if(!(window.albedo&&window.albedo.tx)) throw new Error('Albedo wallet unavailable — reconnect and try again');
+    } else {
+      if(!(window.freighterApi&&window.freighterApi.signTransaction)) throw new Error('Freighter unavailable — reconnect and try again');
+      if(window.freighterApi.getNetwork){
+        try{
+          var fnet=await window.freighterApi.getNetwork();
+          var fPass=(fnet&&(fnet.networkPassphrase||fnet.network))||'';
+          var fRaw=(fnet&&fnet.network)||fPass||'unknown';
+          if(fPass&&fPass!==CFG.passphrase){
+            var wantLabel=(NET==='mainnet')?'Mainnet':'Testnet';
+            var haveLabel=/Public Global Stellar/i.test(fPass)?'Main Net':(/Test SDF/i.test(fPass)?'Test Net':'a different network');
+            var nme=new Error('Freighter’s own network selector is set to '+haveLabel+' (raw: '+fRaw+'), but this app is set to '+wantLabel+'.');
+            nme.code='NET_MISMATCH'; nme.want=wantLabel; nme.have=haveLabel; nme.raw=fRaw;
+            throw nme;
+          }
+        }catch(ne){ if(ne&&ne.code==='NET_MISMATCH')throw ne; }
+      }
+    }
     var RpcNS=(S.rpc&&S.rpc.Server)?S.rpc:S.SorobanRpc;
     if(!RpcNS) throw new Error('This SDK build has no Soroban RPC');
     var server=new RpcNS.Server(RPC_URL);
@@ -1362,12 +1739,43 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       if(/#5\b|NotMatured/i.test(sm)) throw new Error('The note has not reached maturity yet.');
       throw new Error('Simulation failed: '+sm.slice(0,140));
     }
-    onStatus&&onStatus('Waiting for wallet signature…');
-    var signed=await window.albedo.tx({ xdr: prepared.toXDR(), network:CFG.albedo });
-    if(!signed||!signed.signed_envelope_xdr) throw new Error('Signing cancelled');
+    onStatus&&onStatus('Waiting for '+(viaKit?walletLabel(wkind,(store('epn-wallet-label')||'your wallet')):(wkind==='albedo'?'Albedo':'Freighter'))+' signature…');
+    var signedXdr;
+    if(viaKit){
+      var kr;
+      try{ kr=await kit.signTransaction(prepared.toXDR(),{ address:window.STELLAR_PUBKEY, networkPassphrase:CFG.passphrase }); }
+      catch(ke){
+        var km=(ke&&(ke.message||ke))||'';
+        if(/reject|denied|declin|cancel/i.test(String(km))) throw new Error('Signing cancelled');
+        if(/network|passphrase|testnet|mainnet|public/i.test(String(km))){
+          var appNet=(NET==='mainnet')?'Main Net':'Test Net';
+          throw new Error('Your wallet rejected the signature — it’s likely on a different network. This app is on '+appNet+'; set your wallet to '+appNet+' too (or use the Testnet/Mainnet toggle at the top to match your wallet), then retry.');
+        }
+        throw new Error('Wallet signing failed — '+String(km).slice(0,90));
+      }
+      signedXdr=(typeof kr==='string')?kr:(kr&&(kr.signedTxXdr||kr.signedXDR||kr.signed_envelope_xdr));
+      if(!signedXdr) throw new Error('Signing cancelled');
+    } else if(wkind==='albedo'){
+      var signed=await window.albedo.tx({ xdr: prepared.toXDR(), network:CFG.albedo });
+      if(!signed||!signed.signed_envelope_xdr) throw new Error('Signing cancelled');
+      signedXdr=signed.signed_envelope_xdr;
+    } else {
+      var fr;
+      try{ fr=await window.freighterApi.signTransaction(prepared.toXDR(),{ networkPassphrase:CFG.passphrase, address:window.STELLAR_PUBKEY }); }
+      catch(fe){ var fm=(fe&&(fe.message||fe))||''; throw new Error(/reject|denied|declin|cancel/i.test(String(fm))?'Signing cancelled':'Freighter signing failed'); }
+      if(fr&&fr.error) throw new Error(/reject|denied|declin|cancel/i.test(String(fr.error.message||fr.error))?'Signing cancelled':'Freighter signing failed');
+      signedXdr=(typeof fr==='string')?fr:(fr&&(fr.signedTxXdr||fr.signedXDR||fr.signed_envelope_xdr));
+      if(!signedXdr) throw new Error('Signing cancelled');
+    }
     onStatus&&onStatus('Submitting to Stellar…');
-    var sent=await rpcCall('sendTransaction',{ transaction: signed.signed_envelope_xdr });
-    if(sent.status==='ERROR') throw new Error('Network rejected the transaction');
+    var sent=await rpcCall('sendTransaction',{ transaction: signedXdr });
+    if(sent.status==='ERROR'){
+      // The #1 cause here: the wallet signed for a different network than we submitted to — some
+      // wallets (unlike Freighter) don't refuse up front, they sign silently and only THIS step catches it.
+      var bre=new Error('Network rejected the transaction — most likely your wallet signed for a different network than this app is set to.');
+      bre.code='BROADCAST_REJECTED';
+      throw bre;
+    }
     var hash=sent.hash;
     for(var i=0;i<20;i++){
       await new Promise(function(r){setTimeout(r,1500);});
@@ -1410,6 +1818,68 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     if(cb) cb.addEventListener('click',function(){ navigator.clipboard.writeText(window.STELLAR_PUBKEY||'').then(function(){ toast('Address copied'); }); });
   }
 
+  async function checkWalletNetworkNow(){
+    var wkindNow=window.STELLAR_WALLET||'freighter';
+    var wname=walletLabel(wkindNow, store('epn-wallet-label'));
+    var viaKitNow=!!(window.STELLAR_VIA_KIT&&kit);
+    var getter = viaKitNow ? kit.getNetwork.bind(kit) : (window.freighterApi&&window.freighterApi.getNetwork);
+    if(!getter){ toast(wname+' network not detectable in this tab','err'); return; }
+    try{
+      var fnet=await getter();
+      var raw=(fnet&&fnet.network)||'unknown';
+      var pass=(fnet&&fnet.networkPassphrase)||'';
+      var label=/Public Global Stellar/i.test(pass)?'Main Net':(/Test SDF/i.test(pass)?'Test Net':raw);
+      var appLabel=(NET==='mainnet')?'Main Net':'Test Net';
+      var stillMismatched=(label==='Main Net'||label==='Test Net')&&label!==appLabel;
+      toast(wname+' right now: '+label+' (raw: '+raw+') — app is set to '+appLabel, stillMismatched?'err':undefined);
+    }catch(e){ toast('Could not read '+wname+'’s network — '+((e&&e.message)||'unknown error'),'err'); }
+  }
+
+  function showNetworkMismatchHelp(e){
+    var want=e.want||'the app’s network', have=e.have||'a different network';
+    var wname=e.walletName||walletLabel(window.STELLAR_WALLET,store('epn-wallet-label'));
+    // The network the wallet is actually on → what we'd switch the APP to, to match it.
+    var haveNet=(have==='Main Net')?'mainnet':(have==='Test Net')?'testnet':null;
+    var matchBtn = haveNet ?
+      ('<button type="button" class="btn sm" id="matchNetBtn" data-net="'+haveNet+'" style="margin:8px 6px 0 0">Switch this app to '+esc(have)+' (match '+esc(wname)+')</button>') : '';
+    chainMsg(
+      'On-chain step paused — <b>the app and your wallet are on different Stellar networks.</b><br>'+
+      '· '+esc(wname)+' is on <b>'+esc(have)+'</b> (raw: '+esc(e.raw||'')+')<br>'+
+      '· This app is on <b>'+esc(want)+'</b><br>'+
+      'Easiest fix — operate on the network your wallet is already using:'+
+      '<br>'+matchBtn+
+      '<button type="button" class="btn ghost sm" id="checkNetNow" style="margin:8px 0 0">Re-check '+esc(wname)+'’s network</button>'+
+      '<br><span class="small" style="color:var(--muted)">Or switch '+esc(wname)+' itself to '+esc(want)+' (its own network setting, usually near the account/network name), then Re-check.'+
+      (haveNet==='mainnet'?' Note: Main Net uses real XLM.':'')+'</span>',
+      'err'
+    );
+    var mb=$('matchNetBtn');
+    if(mb) mb.addEventListener('click',function(){ switchNet(mb.dataset.net); });
+    var cb=$('checkNetNow');
+    if(cb) cb.addEventListener('click',checkWalletNetworkNow);
+  }
+
+  /* Broadcast was rejected after signing — re-read the wallet's live network right now (the
+     signal wasn't available before signing, or the wallet doesn't refuse mismatches up front)
+     and show the same actionable panel if we can confirm a mismatch; otherwise a plain retry hint. */
+  async function showBroadcastRejectedHelp(){
+    var wname=walletLabel(window.STELLAR_WALLET,store('epn-wallet-label'));
+    var viaKitNow=!!(window.STELLAR_VIA_KIT&&kit);
+    var getter = viaKitNow ? kit.getNetwork.bind(kit) : (window.freighterApi&&window.freighterApi.getNetwork);
+    if(getter){
+      try{
+        var n=await getter();
+        var pass=n&&(n.networkPassphrase||n.network);
+        if(pass&&pass!==CFG.passphrase){
+          var wantLabel=(NET==='mainnet')?'Mainnet':'Testnet';
+          var haveLabel=/Public Global Stellar/i.test(pass)?'Main Net':(/Test SDF/i.test(pass)?'Test Net':'a different network');
+          return showNetworkMismatchHelp({ want:wantLabel, have:haveLabel, raw:(n&&n.network)||pass, walletName:wname });
+        }
+      }catch(e){ /* fall through to generic message */ }
+    }
+    chainMsg('On-chain registration skipped — Network rejected the transaction. This usually means '+esc(wname)+' signed for a different network than this app (currently <b>'+((NET==='mainnet')?'Mainnet':'Testnet')+'</b>). Reconnect '+esc(wname)+' and confirm its network before retrying — or try Albedo, which always signs for the network this app requests.','err');
+  }
+
   function anchorOnIssue(rec){
     if(!window.STELLAR_PUBKEY){ chainMsg('Connect your Stellar wallet to register this note on-chain.'); return; }
     chainMsg('Registering the note on Stellar…');
@@ -1420,6 +1890,8 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       if(current&&current.id===rec.id){ renderStepper(rec); renderStateActions(rec); renderDocAudit(rec); }
     }).catch(function(e){
       if(e&&e.code==='NO_MAINNET_ACCOUNT') return showFundingHelp();
+      if(e&&e.code==='NET_MISMATCH') return showNetworkMismatchHelp(e);
+      if(e&&e.code==='BROADCAST_REJECTED') return showBroadcastRejectedHelp();
       chainMsg('On-chain registration skipped — '+esc(e.message||'error'),'err');
     });
   }
@@ -1435,6 +1907,8 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       if(current){ renderStepper(current); renderStateActions(current); renderDocAudit(current); }
     }catch(e){
       if(e&&e.code==='NO_MAINNET_ACCOUNT') showFundingHelp();
+      else if(e&&e.code==='NET_MISMATCH') showNetworkMismatchHelp(e);
+      else if(e&&e.code==='BROADCAST_REJECTED') showBroadcastRejectedHelp();
       else chainMsg('Settlement failed — '+esc(e.message||'error'),'err');
       b.textContent=old; b.disabled=false;
     }
