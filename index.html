@@ -291,7 +291,7 @@ main{display:block;margin-top:18px}
    Registry, Terms & Conditions) sit side by side instead of stacked, roughly
    halving the section's row count. Sections with long mono values (Chain of
    Control, signature) stay single-column — width is what makes those legible. */
-.doc-sec.doc-2col{display:grid;grid-template-columns:1fr 1fr;column-gap:16px}
+.doc-sec.doc-2col{display:grid;grid-template-columns:1fr 1fr;column-gap:28px}
 .doc-sec.doc-2col>.sh{grid-column:1/-1}
 .doc-sec.doc-2col .kv-wide{grid-column:1/-1}
 .doc-checks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
@@ -394,7 +394,7 @@ main{display:block;margin-top:18px}
   .doc-amt{font-size:23px;margin:4px 0 0}
   .doc-sec{margin-top:6px;padding-top:5px}
   .doc-sec .sh{font-size:8.5px;margin-bottom:1px}
-  .doc-sec.doc-2col{column-gap:12px}
+  .doc-sec.doc-2col{column-gap:22px}
   .kv{padding:2px 0}
   .kv .v{font-size:12px}
   .kv.kv-wide .v{font-size:11px;line-height:1.35}
@@ -579,11 +579,11 @@ main{display:block;margin-top:18px}
           <div id="dSections"></div>
           <div class="doc-sec doc-2col"><div class="sh">Registry</div>
             <div class="kv"><span class="k">Reference</span><span class="v mono" id="dRef">—</span></div>
+            <div class="kv"><span class="k">Audit anchor</span><span class="v mono" id="dAudit">—</span></div>
             <div class="kv"><span class="k">Controller — Holder</span><span class="v" id="dHolder">—</span></div>
             <div class="kv"><span class="k">Issued by</span><span class="v" id="dIssuer">—</span></div>
             <div class="kv"><span class="k">Status</span><span class="v" id="dStatus">—</span></div>
             <div class="kv"><span class="k">Issued on</span><span class="v" id="dIssuedOn">—</span></div>
-            <div class="kv"><span class="k">Audit anchor</span><span class="v mono" id="dAudit">—</span></div>
           </div>
         </div>
         <div class="doc-id">
@@ -1588,9 +1588,11 @@ main{display:block;margin-top:18px}
         if(r.opt && !(f[r.f])) return;
         var tin = r.tin&&f[r.tin] ? '<small>TIN: '+esc(f[r.tin])+'</small>' : '';
         var vhtml = fmtField(n,r);
-        // All fields render as a normal one-line row, Remarks included — kept
-        // to the same compact half-width treatment as everything else.
-        html+='<div class="kv"><span class="k">'+esc(r.k)+'</span><span class="v">'+vhtml+tin+'</span></div>';
+        // Remarks stays full-width even inside a 2-col section — free text
+        // runs long enough that squeezing it into a half column reads worse
+        // than the small amount of vertical space it costs.
+        var isWide = /^remarks$/.test(String(r.f||''));
+        html+='<div class="kv'+(isWide?' kv-wide':'')+'"><span class="k">'+esc(r.k)+'</span><span class="v">'+vhtml+tin+'</span></div>';
       });
       if(sec.checks && f[sec.checks]){ var items=String(f[sec.checks]).split(', ').filter(Boolean);
         if(items.length) html+='<div style="margin-top:6px">'+(sec.checksLabel?'<div class="k" style="margin-bottom:4px">'+esc(sec.checksLabel)+'</div>':'')+'<div class="doc-checks">'+items.map(function(x){return '<span class="doc-chk">✓ '+esc(x)+'</span>';}).join('')+'</div></div>'; }
