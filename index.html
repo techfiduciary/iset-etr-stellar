@@ -263,7 +263,11 @@ main{display:block;margin-top:18px}
 
 /* ── The note document (white paper, both themes) ── */
 .doc{position:relative;background:#fff;color:#13202e;border:1px solid rgba(20,25,31,.12);border-radius:14px;overflow:hidden;box-shadow:0 18px 50px rgba(5,15,35,.35);margin:14px 0}
-.doc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:3px solid #f5c518}
+/* Ribbon + engraved guilloche strip — the accent color follows the Brand
+   color (Brand tab) and falls back to the house yellow. */
+.doc-ribbon{border-top:4px solid #f5c518}   /* border, not background — borders survive default print settings */
+.doc-guilloche{height:8px;opacity:.55;background-image:repeating-linear-gradient(115deg, rgba(245,197,24,.35) 0 1px, transparent 1px 7px)}
+.doc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid rgba(20,25,31,.12)}
 .doc-head .co{display:flex;align-items:center;gap:10px;min-width:0}
 .doc-head .colo{width:38px;height:38px;border-radius:9px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none}
 .doc-head .con{font-size:16px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -272,10 +276,10 @@ main{display:block;margin-top:18px}
 .doc-serial b{color:#33414f;font-weight:600}
 .doc-body{padding:18px}
 .doc-kick{text-align:center;font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#6b7686}
-.doc-title{text-align:center;font-size:19px;font-weight:800;letter-spacing:.02em;margin-top:3px}
+.doc-title{text-align:center;font-size:19px;font-weight:700;letter-spacing:.015em;margin-top:3px;font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif}
 .doc-sub{text-align:center;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.07em;color:#2456c8;margin-top:2px}
-.doc-legal{text-align:center;font-style:italic;color:#6b7686;font-size:12px;max-width:64ch;margin:10px auto 4px;line-height:1.55}
-.doc-amt{text-align:center;font-size:32px;font-weight:800;letter-spacing:-.02em;margin:6px 0 0;font-variant-numeric:tabular-nums}
+.doc-legal{text-align:center;font-style:italic;color:#6b7686;font-size:12px;max-width:64ch;margin:10px auto 4px;line-height:1.55;font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif}
+.doc-amt{text-align:center;font-size:32px;font-weight:600;letter-spacing:-.01em;margin:6px 0 0;font-variant-numeric:tabular-nums;font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif}
 .doc-amt-words{text-align:center;font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:#6b7686;margin:1px 0 2px}
 /* Chain of Control: one-line summary on the face; history expands on demand.
    Paper gets a verify pointer instead of a dead button (.print-only), and an
@@ -286,8 +290,14 @@ main{display:block;margin-top:18px}
 .allonge-head{display:none}
 .allonge-head .ah-t{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:#13202e}
 .allonge-head .ah-s{font-size:9px;color:#6b7686;margin-top:3px;line-height:1.5}
-.doc-sec{margin-top:14px;border-top:1px solid rgba(20,25,31,.12);padding-top:10px}
-.doc-sec .sh{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:600;margin-bottom:2px}
+/* Sections as cards — each block of the note is its own bordered panel with
+   a small line-icon badge, per the approved 2027 redesign. */
+.doc-sec{margin-top:10px;border:1px solid rgba(20,25,31,.12);border-radius:10px;background:#f7f9fc;padding:11px 14px}
+.doc-sec .sh{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:#13202e;margin-bottom:2px}
+.shead{display:flex;align-items:center;gap:8px;margin-bottom:6px;grid-column:1/-1}
+.shead .sh{margin:0}
+.sic{width:22px;height:22px;border-radius:6px;background:#fff;border:1px solid rgba(20,25,31,.12);color:#2456c8;display:flex;align-items:center;justify-content:center;flex:none}
+.sic svg{width:12px;height:12px}
 .kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px dotted rgba(20,25,31,.09)}
 .kv:last-child{border-bottom:none}
 .kv .k{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#6b7686;flex:none}
@@ -306,8 +316,17 @@ main{display:block;margin-top:18px}
 .doc-sec.doc-2col .kv-wide{grid-column:1/-1}
 .doc-checks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .doc-chk{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:#1f7a33;background:rgba(31,122,51,.09);border:1px solid rgba(31,122,51,.3);border-radius:6px;padding:4px 9px}
-.doc-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;border-top:1px solid rgba(20,25,31,.12);background:#fbfcfe}
+.doc-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid rgba(20,25,31,.12);background:#fbfcfe}
 .doc-foot .lft{display:flex;align-items:center;gap:12px}
+/* One trust strip: identity, registration, settlement — equal-weight chips
+   on the same line as the QR + Verify. */
+.foot-chips{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.fchip{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid rgba(20,25,31,.12);border-radius:999px;padding:5px 11px}
+.fchip .fic{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#2456c8;background:#f2f5fa;flex:none}
+.fchip .fic.ok{color:#1f7a33;background:rgba(31,122,51,.1)}
+.fchip .fic img{width:13px;height:13px;object-fit:contain}
+.fchip .ft b{display:block;font-size:10.5px;color:#13202e;line-height:1.25}
+.fchip .ft i{display:block;font-style:normal;font-size:9px;color:#6b7686;line-height:1.25}
 .qrbox{width:60px;height:60px;border:1px solid rgba(20,25,31,.12);border-radius:8px;background:#fff;padding:4px;flex:none}
 .qrbox svg{width:100%;height:100%;display:block}
 .verify-btn{background:#f5c518;color:#1a1503;font-family:ui-monospace,monospace;font-weight:700;font-size:11.5px;letter-spacing:.07em;padding:10px 18px;border-radius:8px;display:inline-block;text-decoration:none}
@@ -402,10 +421,18 @@ main{display:block;margin-top:18px}
   .doc-sub{font-size:9px}
   .doc-legal{font-size:10px;margin:6px auto 2px;line-height:1.4;max-width:70ch}
   .doc-amt{font-size:23px;margin:4px 0 0}
-  .doc-sec{margin-top:6px;padding-top:5px}
+  .doc-sec{margin-top:4px;padding:5px 8px}
   .doc-sec .sh{font-size:8.5px;margin-bottom:1px}
+  .shead{margin-bottom:2px;gap:6px}
+  .sic{width:15px;height:15px;border-radius:4px}
+  .sic svg{width:9px;height:9px}
   .doc-sec.doc-2col{column-gap:22px}
   .kv{padding:2px 0}
+  .doc-ribbon{border-top-width:3px}
+  .doc-guilloche{height:6px}
+  .fchip{padding:3px 8px}
+  .fchip .ft b{font-size:9.5px}
+  .fchip .ft i{font-size:8px}
   .kv .v{font-size:12px}
   .kv.kv-wide .v{font-size:11px;line-height:1.35}
   .doc-checks{margin-top:4px;gap:4px}
@@ -416,7 +443,7 @@ main{display:block;margin-top:18px}
   #chainTimeline:not([hidden]){page-break-before:always;padding-top:22px}
   #chainTimeline:not([hidden]) .allonge-head{display:block;margin:0 0 12px;padding-bottom:9px;border-bottom:2px solid #13202e}
   .doc-id{padding:6px 16px}
-  .doc-foot{padding:9px 16px}
+  .doc-foot{padding:7px 16px}
   .doc-sig{padding:7px 16px 9px}
   .doc-sig .line{font-size:7.5px;margin-bottom:3px}
   .doc-sig .sig{font-size:7px;line-height:1.4}
@@ -578,6 +605,8 @@ main{display:block;margin-top:18px}
       <button class="btn ghost sm no-print" id="backBtn" style="margin-bottom:10px">← Back</button>
       <div class="stepper no-print" id="docStepper"></div>
       <div class="doc" id="docCard">
+        <div class="doc-ribbon" id="docRibbon"></div>
+        <div class="doc-guilloche" id="docGuilloche"></div>
         <div class="doc-head">
           <div class="co"><span class="colo" id="dLogo">MT</span><span class="con" id="dCompany">—</span></div>
           <div class="doc-head-r">
@@ -593,7 +622,8 @@ main{display:block;margin-top:18px}
           <div class="doc-amt" id="dAmount">—</div>
           <div class="doc-amt-words" id="dAmountWords"></div>
           <div id="dSections"></div>
-          <div class="doc-sec doc-2col"><div class="sh">Registry</div>
+          <div class="doc-sec doc-2col">
+            <div class="shead"><span class="sic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span><div class="sh">Registry</div></div>
             <div class="kv"><span class="k">Reference</span><span class="v mono" id="dRef">—</span></div>
             <div class="kv"><span class="k">Audit anchor</span><span class="v mono" id="dAudit">—</span></div>
             <div class="kv"><span class="k">Controller — Holder</span><span class="v" id="dHolder">—</span></div>
@@ -602,24 +632,24 @@ main{display:block;margin-top:18px}
             <div class="kv"><span class="k">Issued on</span><span class="v" id="dIssuedOn">—</span></div>
           </div>
         </div>
-        <div class="doc-id">
-          <span class="di"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-          <div><b id="dIdName">Issuer verified via ISET registry</b><span id="dIdSub">TIN on file · personal data stays off-chain</span></div>
-        </div>
         <div class="doc-foot">
+          <div class="foot-chips">
+            <span class="fchip">
+              <span class="fic ok"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+              <span class="ft"><b id="dIdName">Issuer verified via ISET registry</b><i id="dIdSub">TIN on file · personal data stays off-chain</i></span>
+            </span>
+            <span class="fchip">
+              <span class="fic"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
+              <span class="ft"><b>Registered by ISET eTR</b><i>Post-quantum signed · MLETR aligned</i></span>
+            </span>
+            <span class="fchip">
+              <span class="fic"><img src="/assets/stellar.png" alt="Stellar"></span>
+              <span class="ft"><b>Settlement</b><i id="dSettleCcy">Stellar USDC</i></span>
+            </span>
+          </div>
           <div class="lft">
             <div class="qrbox" id="qrBox" aria-label="Verification QR"></div>
             <a class="verify-btn" id="dVerifyBtn" href="#">VERIFY</a>
-          </div>
-          <div class="badges2">
-            <div class="badge2">
-              <span class="bic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f7a33" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(31,122,51,.1)"/><path d="M9 12l2 2 4-4"/></svg></span>
-              <span class="bt">Secured<b>by ISET eTR</b></span>
-            </div>
-            <div class="badge2">
-              <span class="bic"><img src="/assets/stellar.png" alt="Stellar"></span>
-              <span class="bt">Settlement:<b id="dSettleCcy">Stellar USDC</b></span>
-            </div>
           </div>
         </div>
         <div class="doc-sig">
@@ -1595,6 +1625,27 @@ main{display:block;margin-top:18px}
      ───────────────────────────────────────────────────────────────────────── */
   var current=null;
   function verifyUrl(id){ return location.origin+'/?id='+encodeURIComponent(id); }
+  /* Section header with a line-icon badge — one icon per section family,
+     matched by name so every instrument's sections get a sensible mark. */
+  function secIcon(h){
+    var k=String(h||'').toLowerCase();
+    var P='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">';
+    if(k.indexOf('part')>=0) return P+'<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+    if(k.indexOf('financ')>=0) return P+'<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>';
+    if(k.indexOf('condition')>=0) return P+'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>';
+    if(k.indexOf('chain')>=0||k.indexOf('control')>=0) return P+'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+    if(k.indexOf('registry')>=0) return P+'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>';
+    if(k.indexOf('cargo')>=0||k.indexOf('goods')>=0||k.indexOf('voyage')>=0||k.indexOf('shipment')>=0) return P+'<path d="M16.5 9.4L7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>';
+    if(k.indexOf('term')>=0) return P+'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+    return P+'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+  }
+  function secHead(h){ return '<div class="shead"><span class="sic">'+secIcon(h)+'</span><div class="sh">'+esc(h)+'</div></div>'; }
+  function hexA(hex,a){
+    var m=/^#?([0-9a-f]{6})$/i.exec(String(hex||'').trim());
+    if(!m) return 'rgba(245,197,24,'+a+')';
+    var n=parseInt(m[1],16);
+    return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';
+  }
   function fmtField(rec,r){
     var f=rec.fields||{};
     if(r.lit) return esc(r.lit);
@@ -1620,6 +1671,10 @@ main{display:block;margin-top:18px}
     $('dCompany').textContent=issuerName;
     if(b.logo){ $('dLogo').innerHTML='<img alt="" src="'+b.logo+'">'; $('dLogo').style.background='#fff'; }
     else { $('dLogo').textContent=initials(issuerName); $('dLogo').style.background='linear-gradient(135deg,'+(b.color||I.accent)+','+(b.color?b.color+'cc':I.accent)+')'; }
+    // ribbon + guilloche follow the Brand color; house yellow by default
+    var rcol=b.color||'#f5c518';
+    if($('docRibbon')) $('docRibbon').style.borderTopColor=rcol;
+    if($('docGuilloche')) $('docGuilloche').style.backgroundImage='repeating-linear-gradient(115deg,'+hexA(rcol,.35)+' 0 1px, transparent 1px 7px)';
     $('dKick').textContent=I.name;
     $('dTitle').textContent=I.name.toUpperCase();
     $('dSub').textContent=I.code+' · Issued via ISET eTR';
@@ -1635,7 +1690,7 @@ main{display:block;margin-top:18px}
     // sections
     var html='';
     I.doc.forEach(function(sec){
-      html+='<div class="doc-sec'+(sec.cols===2?' doc-2col':'')+'"><div class="sh">'+esc(sec.h)+'</div>';
+      html+='<div class="doc-sec'+(sec.cols===2?' doc-2col':'')+'">'+secHead(sec.h);
       sec.rows.forEach(function(r){
         if(r.opt && !(f[r.f])) return;
         var tin = r.tin&&f[r.tin] ? '<small>TIN: '+esc(f[r.tin])+'</small>' : '';
@@ -1652,12 +1707,12 @@ main{display:block;margin-top:18px}
     });
     // financial breakdown (WHT / VAT / FX)
     if(n.calc && ((n.calc.rows&&n.calc.rows.length)||n.calc.settle_ccy)){
-      var fr='<div class="doc-sec doc-2col"><div class="sh">Financials</div>';
+      var fr='<div class="doc-sec doc-2col">'+secHead('Financials');
       (n.calc.rows||[]).forEach(function(r){ fr+='<div class="kv"><span class="k">'+esc(r[0])+'</span><span class="v">'+n.currency+' '+fmtAmt(Math.abs(r[1]))+(r[1]<0?' (less)':'')+'</span></div>'; });
       // Settlement before the grand total: in the 2-col grid this seats the
       // grand (Net to payee) directly under the withholding-tax row.
       if(n.calc.settle_ccy) fr+='<div class="kv"><span class="k">Settlement currency</span><span class="v">'+esc(n.calc.settle_ccy)+(n.calc.settle_amount?' · ≈ '+fmtAmt(n.calc.settle_amount)+' @ '+esc(n.calc.fx_rate):'')+'</span></div>';
-      if(n.calc.grand) fr+='<div class="kv"><span class="k">'+esc(n.calc.grand[0])+'</span><span class="v" style="font-size:16px">'+n.currency+' '+fmtAmt(n.calc.grand[1])+'</span></div>';
+      if(n.calc.grand) fr+='<div class="kv"><span class="k">'+esc(n.calc.grand[0])+'</span><span class="v">'+n.currency+' '+fmtAmt(n.calc.grand[1])+'</span></div>';
       if(n.calc.hasInterest) fr+='<div class="small" style="grid-column:1/-1;color:#6b7686;margin-top:8px;line-height:1.5">Indicative — interest is computed to the stated maturity. It accrues to the actual settlement date; settling early reduces the interest proportionately.</div>';
       fr+='</div>'; html+=fr;
     }
@@ -1668,7 +1723,7 @@ main{display:block;margin-top:18px}
     // pretermination is allowed) — never user-editable, or the document
     // could stipulate what the code contradicts.
     if(I.code==='ePN'){
-      var tc='<div class="doc-sec doc-2col"><div class="sh">Terms &amp; Conditions</div>';
+      var tc='<div class="doc-sec doc-2col">'+secHead('Terms & Conditions');
       tc+='<div class="kv"><span class="k">Computation of Yield</span><span class="v">'+(n.calc&&n.calc.hasInterest?'Simple, non-compounded, on the stated principal':'Non-interest-bearing')+'</span></div>';
       tc+='<div class="kv"><span class="k">Pretermination</span><span class="v">Allowed — reduces interest proportionately</span></div>';
       tc+='<div class="kv"><span class="k">Renewal</span><span class="v">'+esc(f.renewal||'No automatic renewal')+'</span></div>';
@@ -1691,7 +1746,7 @@ main{display:block;margin-top:18px}
                          : ('Held by <b class="mono">'+esc(holderShort)+'</b>');
       if(n.settle_tx) sum+=' · settled';
       if(n.pending_addr) sum+=' · endorsement offered to <span class="mono">'+esc(trunc(n.pending_addr))+'</span>';
-      var ch='<div class="doc-sec"><div class="sh">Chain of Control</div>';
+      var ch='<div class="doc-sec">'+secHead('Chain of Control');
       ch+='<div class="chain-sum"><span>'+sum+'</span>'+
           '<button type="button" class="btn ghost sm no-print" id="chainHistBtn">Show full history</button></div>';
       ch+='<div class="print-only">Full chain of control — verify via the QR below · Ref '+esc(n.id)+'</div>';
