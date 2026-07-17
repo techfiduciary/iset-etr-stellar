@@ -2107,6 +2107,38 @@ main{display:block;margin-top:18px}
     return invokeContract('accept',args,onStatus);
   };
 
+  /* Read the escrow's current state straight off Stellar — no wallet, no
+     signing, no submit. Uses simulateTransaction (a read-only host call) so
+     ANYONE can verify who holds a note, not just the browser that issued it.
+     Returns {maker, lender, amount, maturity, status, pending} or throws.
+     NOTE: the demo contract holds ONE note at a time, so this reflects the
+     most-recently-initialized note — the caller fingerprints it against the
+     record being verified (maker+amount) before trusting it as "this note". */
+  function scEnumStr(v){ if(v==null)return null; if(typeof v==='string')return v; if(v.tag)return v.tag; if(Array.isArray(v))return String(v[0]); return String(v); }
+  window.readEpnOnChain = async function(){
+    var S=sdk(); if(!S) throw new Error('Stellar SDK still loading');
+    var RpcNS=(S.rpc&&S.rpc.Server)?S.rpc:S.SorobanRpc;
+    if(!RpcNS) throw new Error('This SDK build has no Soroban RPC');
+    var server=new RpcNS.Server(RPC_URL);
+    var src=new S.Account(S.Keypair.random().publicKey(),'0');   // throwaway source — simulate never checks it
+    var contract=new S.Contract(window.SOROBAN_CONTRACT_ID);
+    async function readFn(fn){
+      var tx=new S.TransactionBuilder(src,{fee:'100',networkPassphrase:CFG.passphrase})
+        .addOperation(contract.call(fn)).setTimeout(30).build();
+      var sim=await server.simulateTransaction(tx);
+      if(sim.error) throw new Error(String(sim.error).slice(0,120));
+      var rv=sim.result&&sim.result.retval;
+      if(!rv && sim.results&&sim.results[0]&&sim.results[0].xdr) rv=S.xdr.ScVal.fromXDR(sim.results[0].xdr,'base64');
+      return rv?S.scValToNative(rv):null;
+    }
+    var terms=await readFn('terms');       // {maker,lender,amount,maturity}
+    var status=await readFn('status');     // Active | Released | Defaulted
+    var pending=await readFn('pending');   // holder address, or null
+    return { maker:terms&&terms.maker, lender:terms&&terms.lender,
+      amount:terms?String(terms.amount):null, maturity:terms?Number(terms.maturity):null,
+      status:scEnumStr(status), pending:pending||null };
+  };
+
   function fundingHelp(){
     var pk=window.STELLAR_PUBKEY||'';
     return 'Your wallet has no <b>Stellar mainnet</b> account yet — it activates the moment it receives XLM. '+
@@ -2308,9 +2340,50 @@ main{display:block;margin-top:18px}
           (rec.amount?'<dt>Amount</dt><dd>'+esc(rec.currency||'')+' '+fmtAmt(rec.amount)+'</dd>':'')+
           (rec.record_hash?'<dt>Record hash</dt><dd class="mono small">'+esc(rec.record_hash)+'</dd>':'')+
           '</dl></div>'+auditLine+
+          '<div id="vChain"></div>'+
           '<p class="note">Verified against the ISET registry of record. Anyone with this reference can repeat this check.</p>';
+        // Live on-chain control — who holds it NOW, read straight from Stellar
+        // (only for the on-chain instrument). Appends async so registry
+        // verification never waits on or regresses from the chain read.
+        var type=rec.instrument||(local?local.type:'');
+        if(/ePN|Promissory/i.test(type)||(local&&local.type==='ePN')) verifyOnChain(rec, local);
       })
       .catch(function(e){ out.innerHTML='<p class="err">Could not verify <span class="mono">'+esc(id)+'</span> — '+esc(e.message||'not found')+'.</p>'; });
+  }
+  function verifyOnChain(rec, local){
+    var box=$('vChain'); if(!box) return;
+    box.innerHTML='<p class="note" style="margin-top:10px">Reading live control state from Stellar…</p>';
+    var expl='https://stellar.expert/explorer/'+CFG.expert+'/contract/'+window.SOROBAN_CONTRACT_ID;
+    var link='<a class="link" href="'+expl+'" target="_blank" rel="noopener">contract on Stellar Explorer ↗</a>';
+    window.readEpnOnChain().then(function(oc){
+      var f=(rec&&rec.fields)||{};
+      // fingerprint: does the contract's current note match THIS record?
+      var refMaker=(local&&local.maker_addr)||f.stellar_pubkey||'';
+      var refAmt=String(Math.round(Number((local&&local.amount)||rec.amount||0)));
+      var canMatch=!!(refMaker&&oc.maker);
+      var isThis = canMatch && oc.maker===refMaker && oc.amount===refAmt;
+      var endorsed = oc.lender && oc.maker && oc.lender!==oc.maker;
+      if(canMatch && !isThis){
+        box.innerHTML='<div class="result" style="margin-top:10px"><div class="vbadges"><span class="vbadge">On-chain: different active note</span></div>'+
+          '<p class="note">This demo contract stores one note at a time, and a later issuance has since replaced this one on-chain. The registry issuance record above remains valid and signed — but live holder state for <em>this</em> note is no longer on the contract. '+link+'</p></div>';
+        return;
+      }
+      var holderLine = endorsed
+        ? '<dt>Current holder</dt><dd class="mono">'+esc(oc.lender)+'<small style="display:block;color:#6b7686;font-weight:500">endorsed — control moved from the maker</small></dd>'
+        : '<dt>Current holder</dt><dd class="mono">'+esc(oc.lender||'—')+'<small style="display:block;color:#6b7686;font-weight:500">original holder — not yet endorsed</small></dd>';
+      var pendLine = oc.pending ? '<dt>Pending endorsement</dt><dd class="mono">'+esc(oc.pending)+'<small style="display:block;color:#6b7686;font-weight:500">offered — awaiting the endorsee’s acceptance</small></dd>' : '';
+      var confBadge = isThis
+        ? '<span class="vbadge ok">✓ Matches this record</span>'
+        : '<span class="vbadge">Contract’s current active note</span>';
+      box.innerHTML='<div class="result" style="margin-top:10px">'+
+        '<div class="vbadges"><span class="vbadge ok">✓ Live from Stellar</span>'+confBadge+
+        '<span class="vbadge '+(oc.status==='Released'?'ok':'')+'">'+esc(oc.status||'—')+'</span></div>'+
+        '<dl><dt>Maker</dt><dd class="mono">'+esc(oc.maker||'—')+'</dd>'+
+        holderLine+pendLine+
+        '</dl><p class="note">Control read live from the settlement contract — no wallet, no trust in this page required; anyone can repeat it. '+link+'</p></div>';
+    }).catch(function(e){
+      box.innerHTML='<p class="note" style="margin-top:10px">Live on-chain control state is momentarily unavailable ('+esc((e&&e.message)||'read failed')+'). The registry verification above stands on its own. '+link+'</p>';
+    });
   }
   $('vBtn').addEventListener('click',function(){ var id=$('vId').value.trim(); if(/^[A-Za-z0-9_-]{4,60}$/.test(id)) runVerify(id); else toast('Enter a valid record reference','err'); });
   $('vId').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); $('vBtn').click(); } });
