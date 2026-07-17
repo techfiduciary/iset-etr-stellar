@@ -280,7 +280,7 @@ main{display:block;margin-top:18px}
 .doc-sub{text-align:center;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.07em;color:#2456c8;margin-top:2px}
 .doc-legal{text-align:center;font-style:italic;color:#6b7686;font-size:12px;max-width:64ch;margin:10px auto 4px;line-height:1.55;font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif}
 .doc-amt{text-align:center;font-size:32px;font-weight:600;letter-spacing:-.01em;margin:6px 0 0;font-variant-numeric:tabular-nums;font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif}
-.doc-amt-words{text-align:center;font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:#6b7686;margin:1px 0 2px}
+.doc-amt-words{text-align:center;font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:#6b7686;margin:1px 0 8px}
 /* Chain of Control: one-line summary on the face; history expands on demand.
    Paper gets a verify pointer instead of a dead button (.print-only), and an
    expanded history prints as its own Endorsement Schedule (Allonge) page. */
@@ -292,9 +292,9 @@ main{display:block;margin-top:18px}
 .allonge-head .ah-s{font-size:9px;color:#6b7686;margin-top:3px;line-height:1.5}
 /* Sections as cards — each block of the note is its own bordered panel with
    a small line-icon badge, per the approved 2027 redesign. */
-.doc-sec{margin-top:10px;border:1px solid rgba(20,25,31,.12);border-radius:10px;background:#f7f9fc;padding:11px 14px}
+.doc-sec{margin-top:16px;border:1.5px solid rgba(20,25,31,.22);border-radius:10px;background:#f7f9fc;padding:11px 14px}
 .doc-sec .sh{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:#13202e;margin-bottom:2px}
-.shead{display:flex;align-items:center;gap:8px;margin-bottom:6px;grid-column:1/-1}
+.shead{display:flex;align-items:center;gap:8px;margin-bottom:6px;grid-column:1/-1;grid-row:1}
 .shead .sh{margin:0}
 .sic{width:22px;height:22px;border-radius:6px;background:#fff;border:1px solid rgba(20,25,31,.12);color:#2456c8;display:flex;align-items:center;justify-content:center;flex:none}
 .sic svg{width:12px;height:12px}
@@ -312,6 +312,10 @@ main{display:block;margin-top:18px}
    halving the section's row count. Sections with long mono values (Chain of
    Control, signature) stay single-column — width is what makes those legible. */
 .doc-sec.doc-2col{display:grid;grid-template-columns:1fr 1fr;column-gap:28px}
+/* Registry: true left/right column stacks (Reference/Issued by/Issued on
+   down the left, Audit anchor/Controller/Status down the right) rather than
+   the row-paired flow every other 2-col section uses. */
+.doc-sec.doc-cols{grid-auto-flow:column;grid-template-rows:auto repeat(3,auto)}
 .doc-sec.doc-2col>.sh{grid-column:1/-1}
 .doc-sec.doc-2col .kv-wide{grid-column:1/-1}
 .doc-checks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
@@ -421,7 +425,7 @@ main{display:block;margin-top:18px}
   .doc-sub{font-size:9px}
   .doc-legal{font-size:10px;margin:6px auto 2px;line-height:1.4;max-width:70ch}
   .doc-amt{font-size:23px;margin:4px 0 0}
-  .doc-sec{margin-top:4px;padding:5px 8px}
+  .doc-sec{margin-top:8px;border-width:1.25px;padding:5px 8px}
   .doc-sec .sh{font-size:8.5px;margin-bottom:1px}
   .shead{margin-bottom:2px;gap:6px}
   .sic{width:15px;height:15px;border-radius:4px}
@@ -622,14 +626,14 @@ main{display:block;margin-top:18px}
           <div class="doc-amt" id="dAmount">—</div>
           <div class="doc-amt-words" id="dAmountWords"></div>
           <div id="dSections"></div>
-          <div class="doc-sec doc-2col">
+          <div class="doc-sec doc-2col doc-cols">
             <div class="shead"><span class="sic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span><div class="sh">Registry</div></div>
             <div class="kv"><span class="k">Reference</span><span class="v mono" id="dRef">—</span></div>
+            <div class="kv"><span class="k">Issued by</span><span class="v" id="dIssuer">—</span></div>
+            <div class="kv"><span class="k">Issued on</span><span class="v" id="dIssuedOn">—</span></div>
             <div class="kv"><span class="k">Audit anchor</span><span class="v mono" id="dAudit">—</span></div>
             <div class="kv"><span class="k">Controller — Holder</span><span class="v" id="dHolder">—</span></div>
-            <div class="kv"><span class="k">Issued by</span><span class="v" id="dIssuer">—</span></div>
             <div class="kv"><span class="k">Status</span><span class="v" id="dStatus">—</span></div>
-            <div class="kv"><span class="k">Issued on</span><span class="v" id="dIssuedOn">—</span></div>
           </div>
         </div>
         <div class="doc-foot">
@@ -640,7 +644,7 @@ main{display:block;margin-top:18px}
             </span>
             <span class="fchip">
               <span class="fic"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
-              <span class="ft"><b>Registered by ISET eTR</b><i>Post-quantum signed · MLETR aligned</i></span>
+              <span class="ft"><b>Registered: ISET eTR</b><i>Post-quantum signed · MLETR aligned</i></span>
             </span>
             <span class="fchip">
               <span class="fic"><img src="/assets/stellar.png" alt="Stellar"></span>
@@ -1484,7 +1488,7 @@ main{display:block;margin-top:18px}
       if(ec.interest>0){
         calc.hasInterest=true;
         calc.rows.push(['Principal',amount]);
-        calc.rows.push(['Interest ('+ec.ratePa+'% p.a.'+(ec.declining&&ec.n>1?', declining balance':' × '+termLabel(ec.months))+')', ec.interest]);
+        calc.rows.push(['Interest ('+ec.ratePa+'% p.a.'+(ec.declining&&ec.n>1?', declining':' × '+termLabel(ec.months))+')', ec.interest]);
         if(ec.wht>0){
           calc.rows.push(['Total due at maturity', ec.totalDue]);
           calc.rows.push(['Withholding tax on interest ('+ec.whtp+'%)', -ec.wht]);
@@ -1505,13 +1509,13 @@ main{display:block;margin-top:18px}
   }
   function recompute(){
     var I=INSTR[CUR], calc=computeCalc(), box=$('issueSummary'), rows=[];
-    (calc.rows||[]).forEach(function(r){ rows.push('<div><span>'+esc(r[0])+'</span><span>'+calc.currency+' '+fmtAmt(Math.abs(r[1]))+(r[1]<0?' −':'')+'</span></div>'); });
+    (calc.rows||[]).forEach(function(r){ rows.push('<div><span>'+esc(r[0])+'</span><span>'+(r[1]<0?'− ':'')+calc.currency+' '+fmtAmt(Math.abs(r[1]))+'</span></div>'); });
     var grand = calc.grand ? '<div class="grand"><span>'+esc(calc.grand[0])+'</span><span>'+calc.currency+' '+fmtAmt(calc.grand[1])+'</span></div>' :
                 (calc.big? '<div class="grand"><span>Amount</span><span>'+calc.currency+' '+fmtAmt(calc.big)+'</span></div>':'');
     var repay = calc.repay ? '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px"><span>Repayment</span><span>'+esc(calc.repay)+'</span></div>' : '';
     var fx = (calc.settle_ccy&&calc.settle_amount) ? '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px"><span>≈ Settlement in '+calc.settle_ccy+' @ '+calc.fx_rate+'</span><span>'+calc.settle_ccy+' '+fmtAmt(calc.settle_amount)+'</span></div>' :
              (calc.settle_ccy? '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px"><span>Settlement currency</span><span>'+calc.settle_ccy+' · enter indicative rate</span></div>':'');
-    var inote = calc.hasInterest ? '<div class="small" style="color:var(--muted);margin-top:8px;line-height:1.5">Indicative — interest is computed to the stated maturity. It accrues to the actual settlement date; settling early reduces the interest proportionately.</div>' : '';
+    var inote = calc.hasInterest ? '<div class="small" style="color:var(--muted);margin-top:8px;font-size:11px;line-height:1.4">Indicative — interest is computed to the stated maturity. It accrues to the actual settlement date; settling early reduces the interest proportionately.</div>' : '';
     if(!rows.length && !calc.grand && !calc.big && !fx && !repay){ box.style.display='none'; return; }
     box.style.display='block'; box.innerHTML=rows.join('')+grand+repay+fx+inote;
   }
@@ -1712,12 +1716,12 @@ main{display:block;margin-top:18px}
     // financial breakdown (WHT / VAT / FX)
     if(n.calc && ((n.calc.rows&&n.calc.rows.length)||n.calc.settle_ccy)){
       var fr='<div class="doc-sec doc-2col">'+secHead('Financials');
-      (n.calc.rows||[]).forEach(function(r){ fr+='<div class="kv"><span class="k">'+esc(r[0])+'</span><span class="v">'+n.currency+' '+fmtAmt(Math.abs(r[1]))+(r[1]<0?' (less)':'')+'</span></div>'; });
+      (n.calc.rows||[]).forEach(function(r){ fr+='<div class="kv"><span class="k">'+esc(r[0])+'</span><span class="v">'+(r[1]<0?'− ':'')+n.currency+' '+fmtAmt(Math.abs(r[1]))+'</span></div>'; });
       // Settlement before the grand total: in the 2-col grid this seats the
       // grand (Net to payee) directly under the withholding-tax row.
       if(n.calc.settle_ccy) fr+='<div class="kv"><span class="k">Settlement currency</span><span class="v">'+esc(n.calc.settle_ccy)+(n.calc.settle_amount?' · ≈ '+fmtAmt(n.calc.settle_amount)+' @ '+esc(n.calc.fx_rate):'')+'</span></div>';
       if(n.calc.grand) fr+='<div class="kv"><span class="k">'+esc(n.calc.grand[0])+'</span><span class="v">'+n.currency+' '+fmtAmt2(n.calc.grand[1])+'</span></div>';
-      if(n.calc.hasInterest) fr+='<div class="small" style="grid-column:1/-1;color:#6b7686;margin-top:8px;line-height:1.5">Indicative — interest is computed to the stated maturity. It accrues to the actual settlement date; settling early reduces the interest proportionately.</div>';
+      if(n.calc.hasInterest) fr+='<div class="small" style="grid-column:1/-1;color:#6b7686;margin-top:8px;font-size:9px;line-height:1.4">Indicative — interest is computed to the stated maturity. It accrues to the actual settlement date; settling early reduces the interest proportionately.</div>';
       fr+='</div>'; html+=fr;
     }
     // Terms & Conditions — MORB-pattern stipulations. Renewal / Collateral /
@@ -1728,8 +1732,6 @@ main{display:block;margin-top:18px}
     // could stipulate what the code contradicts.
     if(I.code==='ePN'){
       var tc='<div class="doc-sec doc-2col">'+secHead('Terms & Conditions');
-      tc+='<div class="kv"><span class="k">Computation of Yield</span><span class="v">'+(n.calc&&n.calc.hasInterest?'Simple, non-compounded, on the stated principal':'Non-interest-bearing')+'</span></div>';
-      tc+='<div class="kv"><span class="k">Pretermination</span><span class="v">Allowed — reduces interest proportionately</span></div>';
       if(f.stipulations){
         // issuer-written stipulations — full width, verbatim
         tc+='<div class="kv kv-wide"><span class="k">Stipulations</span><span class="v">'+esc(f.stipulations)+'</span></div>';
@@ -1744,6 +1746,8 @@ main{display:block;margin-top:18px}
         // silence has a legal meaning — print it rather than leave a blank
         tc+='<div class="kv kv-wide"><span class="k">Stipulations</span><span class="v">No further stipulations — no automatic renewal · no collateral · no liquidated damages</span></div>';
       }
+      tc+='<div class="kv"><span class="k">Computation of Yield</span><span class="v">'+(n.calc&&n.calc.hasInterest?'Simple, non-compounded, on the stated principal':'Non-interest-bearing')+'</span></div>';
+      tc+='<div class="kv"><span class="k">Pretermination</span><span class="v">Allowed — reduces interest proportionately</span></div>';
       tc+='</div>'; html+=tc;
     }
     // Chain of control — the face carries a one-line summary of current
@@ -1795,7 +1799,9 @@ main{display:block;margin-top:18px}
     $('dHolder').textContent=holder+(holderAddr?' · '+trunc(holderAddr):'');
     $('dIssuer').textContent=issuerName;
     $('dStatus').textContent=(n.status||'registered')+(n.sandbox?' · sandbox':'');
-    $('dIssuedOn').textContent=fmtDate(f.issue_date);
+    // The user-entered issue_date is a date only; the first audit entry
+    // ('Issued & signed', always pushed first) carries the real timestamp.
+    $('dIssuedOn').textContent=(n.audit&&n.audit.length)?fmtStamp(n.audit[0].ts):fmtDate(f.issue_date);
     $('dAudit').textContent=n.audit_id||'—';
     // identity badge (honest wording)
     var issuerTin=f.maker_tin||f.drawer_tin||f.shipper_tin||f.applicant_tin||f.depositor_tin||f.seller_tin||'';
