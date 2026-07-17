@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths: ["contracts/**", ".github/workflows/contract.yml"]
   pull_request:
-    paths: ["contracts/**"]
+    paths: ["contracts/**", ".github/workflows/contract.yml"]
 
 defaults:
   run:
@@ -34,3 +34,9 @@ jobs:
       - run: rustup target add wasm32v1-none
       - run: cargo build --target wasm32v1-none --release --locked
       - run: ls -la target/wasm32v1-none/release/epn_escrow.wasm
+      # The dev machine (~7 GB RAM) cannot reliably compile the contract —
+      # this artifact is the canonical build used for testnet/mainnet deploys.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: epn_escrow-wasm
+          path: contracts/epn_escrow/target/wasm32v1-none/release/epn_escrow.wasm

@@ -37,6 +37,8 @@ pub enum Error {
     Unauthorized = 4,
     /// The note has not yet reached its maturity date.
     NotMatured = 5,
+    /// No endorsement offer is outstanding for this note.
+    NoPendingEndorsement = 6,
 }
 
 /// Lifecycle state of the note.
@@ -57,7 +59,8 @@ pub enum Status {
 pub struct Terms {
     /// The maker (promisor) who unconditionally promises to pay.
     pub maker: Address,
-    /// The payee/lender the note is payable to.
+    /// The current holder the note is payable to — the original payee at
+    /// issuance, updated to the endorsee on each accepted endorsement.
     pub lender: Address,
     /// Principal amount, in the note's currency (minor units).
     pub amount: i128,
@@ -74,6 +77,8 @@ enum DataKey {
     Status,
     /// The 32-byte ISET public key anchoring the off-chain legal proof.
     IsetKey,
+    /// The outstanding endorsement offer: the endorsee who may `accept`.
+    Pending,
 }
 
 #[contract]
@@ -111,15 +116,78 @@ impl EpnEscrow {
         store.set(&DataKey::Terms, &terms);
         store.set(&DataKey::IsetKey, &iset_pubkey);
         store.set(&DataKey::Status, &Status::Active);
+        // A fresh note must not inherit a stale endorsement offer from the
+        // previous note held in this instance.
+        store.remove(&DataKey::Pending);
 
         e.events()
             .publish((symbol_short!("init"),), (maker, lender, amount, maturity));
     }
 
-    /// Endorse and settle the note to the lender.
+    /// Offer to endorse the note to a new holder.
     ///
-    /// Only the registered lender may call this, and only while the note is
-    /// `Active`. The `iset_signature` — ISET's proof that the off-chain legal
+    /// Only the current holder (`lender`) may endorse, and only while the note
+    /// is `Active`. The offer is not effective until the endorsee calls
+    /// [`accept`](Self::accept) — endorsement (assignment) plus acceptance are
+    /// two distinct authorized acts, mirroring endorsement and delivery of a
+    /// paper note. Re-endorsing before acceptance replaces the outstanding
+    /// offer (the offer is revocable until accepted).
+    ///
+    /// # Panics
+    /// [`Error::Unauthorized`] if `from` is not the current holder;
+    /// [`Error::NotActive`] if the note is not `Active`.
+    pub fn endorse(e: Env, from: Address, to: Address) {
+        let terms = Self::read_terms(&e);
+        if from != terms.lender {
+            panic_with_error!(&e, Error::Unauthorized);
+        }
+        from.require_auth();
+        Self::require_active(&e);
+
+        e.storage().instance().set(&DataKey::Pending, &to);
+        e.events().publish((symbol_short!("endorse"),), (from, to));
+    }
+
+    /// Accept an outstanding endorsement offer and become the note's holder.
+    ///
+    /// Only the endorsee named by the current holder's [`endorse`](Self::endorse)
+    /// may accept, and only while the note is `Active`. On acceptance the
+    /// caller becomes the `lender` — the sole party able to settle via
+    /// [`release_funds`](Self::release_funds) — and the previous holder loses
+    /// all control. Exclusive control transfers atomically; the same note can
+    /// never be endorsed to two holders at once.
+    ///
+    /// # Panics
+    /// [`Error::NoPendingEndorsement`] if no offer is outstanding;
+    /// [`Error::Unauthorized`] if the caller is not the named endorsee;
+    /// [`Error::NotActive`] if the note is not `Active`.
+    pub fn accept(e: Env, to: Address) {
+        let pending: Address = e
+            .storage()
+            .instance()
+            .get(&DataKey::Pending)
+            .unwrap_or_else(|| panic_with_error!(&e, Error::NoPendingEndorsement));
+        if to != pending {
+            panic_with_error!(&e, Error::Unauthorized);
+        }
+        to.require_auth();
+        Self::require_active(&e);
+
+        let mut terms = Self::read_terms(&e);
+        let from = terms.lender.clone();
+        terms.lender = to.clone();
+        let store = e.storage().instance();
+        store.set(&DataKey::Terms, &terms);
+        store.remove(&DataKey::Pending);
+
+        e.events().publish((symbol_short!("accepted"),), (from, to));
+    }
+
+    /// Settle the note to its current holder.
+    ///
+    /// Only the current holder (`lender` — the original payee, or the last
+    /// accepted endorsee) may call this, and only while the note is `Active`.
+    /// The `iset_signature` — ISET's proof that the off-chain legal
     /// endorsement is valid — is recorded in the `released` event as an audit
     /// anchor. Transitions the note to `Released`.
     ///
@@ -167,6 +235,11 @@ impl EpnEscrow {
             .set(&DataKey::Status, &Status::Defaulted);
         e.events()
             .publish((symbol_short!("defaulted"),), (caller, terms.maturity));
+    }
+
+    /// Read the pending endorsee, if an endorsement offer is outstanding.
+    pub fn pending(e: Env) -> Option<Address> {
+        e.storage().instance().get(&DataKey::Pending)
     }
 
     /// Read the current settlement status.

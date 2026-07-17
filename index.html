@@ -18,17 +18,28 @@
 <html lang="en" data-theme="dark"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>eTransferable Records · by ISET on Stellar</title>
-<meta name="description" content="Issue, hold, and verify the six electronic transferable records — post-quantum signed, independently verifiable, settling in Stellar USDC.">
+<meta name="description" content="Issue, hold, and verify the six electronic transferable records — post-quantum signed, independently verifiable, settled on the Stellar network.">
 <meta name="theme-color" content="#0b1f3a">
 <link rel="icon" type="image/png" href="/assets/eTR.png">
 <link rel="apple-touch-icon" href="/assets/eTR.png">
 <meta property="og:title" content="eTransferable Records · by ISET on Stellar">
-<meta property="og:description" content="Six post-quantum-signed trade instruments, settling in Stellar USDC.">
+<meta property="og:description" content="Six post-quantum-signed trade instruments, settled on the Stellar network.">
 <meta property="og:image" content="/assets/eTR.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/4.1.0/index.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@albedo-link/intent@0.12.0/lib/albedo.intent.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@13.0.0/dist/stellar-sdk.min.js" defer></script>
 <script src="https://iset.finance/assets/qr.js" defer></script>
+<!-- Stellar Wallets Kit — one modal for all Stellar wallets (Freighter · xBull · Albedo · Rabet · Lobstr · Hana · HOT).
+     Self-hosted on our own domain (assets/swk/) — no runtime CDN dependency, so it loads the same everywhere.
+     The Freighter/Albedo scripts above stay only as a last-resort fallback. -->
+<script type="module">
+  try{
+    var m = await import('/assets/swk/stellar-wallets-kit.bundle.mjs');
+    window.SWK = { StellarWalletsKit:m.StellarWalletsKit, allowAllModules:m.allowAllModules, WalletNetwork:m.WalletNetwork, FREIGHTER_ID:m.FREIGHTER_ID };
+    window.SWK_READY = true;
+    window.dispatchEvent(new Event('swk-ready'));
+  }catch(e){ window.SWK_FAILED = true; console.warn('Stellar Wallets Kit failed to load — falling back to built-in Freighter/Albedo picker.', e); }
+</script>
 <style>
 :root{
   --bg:#0b1f3a; --bg2:#0e2748; --card:#10294b; --line:#1d3a63;
@@ -47,22 +58,18 @@ html{scrollbar-gutter:stable}
 html,body{margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI Variable","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 .app{max-width:560px;margin:0 auto;padding:0 14px 40px;min-height:100vh}
-.topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 4px;position:sticky;top:0;background:linear-gradient(var(--bg),rgba(11,31,58,.86));backdrop-filter:blur(6px);z-index:5}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 4px;position:sticky;top:10px;border-radius:22px;background:linear-gradient(var(--bg),rgba(11,31,58,.86));z-index:5;transition:background .25s ease,backdrop-filter .25s ease,box-shadow .25s ease,padding .25s ease}
 .brand{display:flex;align-items:center;gap:9px}
 .brandtext{display:flex;flex-direction:column;line-height:1.05}
 .logo{border-radius:7px;display:block}
 .brand .mark{font-weight:800;letter-spacing:.06em}
 .brand .sub{font-size:11px;color:var(--muted)}
 .banner{background:#3a2a0e;border:1px solid #6b4e15;color:#f6d98a;border-radius:10px;padding:7px 10px;font-size:12px;text-align:center;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
-.netswitch{display:inline-flex;border:1px solid #6b4e15;border-radius:999px;overflow:hidden;flex:0 0 auto}
-.netswitch button{background:transparent;border:0;color:#f6d98a;font-size:11px;font-weight:700;padding:3px 10px;cursor:pointer;line-height:1.4}
-.netswitch button.on{background:#f6d98a;color:#3a2a0e}
-html[data-theme="light"] .netswitch{border-color:#e3c878}
-html[data-theme="light"] .netswitch button{color:#7a5a12}
-html[data-theme="light"] .netswitch button.on{background:#7a5a12;color:#fdf3d6}
-.tabs{display:flex;gap:6px;margin:6px 0 14px}
-.tabs button{flex:1;background:var(--bg2);color:var(--muted);border:1px solid var(--line);padding:9px;border-radius:10px;font-weight:600;cursor:pointer}
-.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tabs{display:flex;gap:2px;margin:0;background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:4px}
+.tabs button{flex:0 0 auto;display:flex;align-items:center;gap:6px;background:transparent;border:0;color:#111;font-size:13px;font-weight:700;padding:9px 16px;border-radius:999px;cursor:pointer}
+.tabs button.on{color:#fff;background:#0022b4}
+.tabicon{display:none}
+.tabicon svg{width:18px;height:18px;display:block}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
 .card h2{margin:0 0 4px;font-size:18px}
 .muted{color:var(--muted);font-size:13px;margin:0 0 12px}
@@ -78,6 +85,7 @@ a.btn{text-decoration:none;display:inline-block;text-align:center}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn.sm{padding:7px 10px;font-size:12px}
 .connect{display:flex;align-items:center;gap:8px}
+#connectBox .btn{background:#0022b4;color:#fff;border-radius:999px;padding:9px 20px}
 .pill{display:inline-flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:5px 10px;font-size:12px;font-family:ui-monospace,monospace;cursor:pointer}
 .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
 .result{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
@@ -97,6 +105,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 .foot{color:var(--muted);font-size:11px;text-align:center;margin-top:20px;line-height:1.6}
 .footlinks{margin-bottom:8px}
 .footlinks button{background:none;border:0;color:var(--soft);font-size:11px;cursor:pointer;padding:0}
+main{display:block;margin-top:18px}
 .hero{background:linear-gradient(150deg,#2a5fd0,#0b1f3a 92%);border-radius:18px;padding:20px 16px 16px;margin-bottom:8px;box-shadow:0 12px 30px rgba(8,20,40,.45)}
 .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.92);font-weight:700}
 .hero h1{font-size:30px;line-height:1.08;margin:10px 0 8px;font-weight:800;letter-spacing:-.02em;min-height:66px;color:#fff}
@@ -150,9 +159,41 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 .vbadges{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 4px}
 .vbadge{box-sizing:border-box;display:inline-flex;flex:0 0 auto;align-items:center;gap:5px;margin:0;font-size:11px;line-height:1;height:26px;color:var(--muted);background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:0 10px;white-space:nowrap;vertical-align:middle}
 .vbadge.ok{color:var(--ok);border-color:rgba(52,211,153,.35);background:rgba(52,211,153,.10)}
+.vbadge.bad{color:var(--err);border-color:rgba(248,113,113,.35);background:rgba(248,113,113,.10)}
 .toasts{position:fixed;left:0;right:0;bottom:18px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;z-index:50}
 .toast{background:#10294b;border:1px solid #2b62b6;color:#eaf1fb;font-size:13px;padding:10px 16px;border-radius:10px;max-width:90%;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .toast.err{border-color:#7a2f2f;background:#3a1d1d;color:#f6caca}
+.wsheet-scrim{position:fixed;inset:0;background:rgba(4,10,22,.55);backdrop-filter:blur(3px);z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;transition:opacity .16s ease}
+.wsheet-scrim.on{opacity:1}
+.wsheet{width:100%;max-width:380px;max-height:82vh;overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);padding:18px;transform:translateY(8px) scale(.98);transition:transform .18s cubic-bezier(.2,.8,.2,1)}
+.wsheet-scrim.on .wsheet{transform:none}
+.wsheet h3{margin:0 0 2px;font-size:16px}
+.wsheet .wsub{margin:0 0 14px;color:var(--muted);font-size:12px}
+.wopt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;transition:border-color .12s,background .12s}
+.wopt+.wopt{margin-top:9px}
+.wopt:hover{border-color:var(--accent);background:var(--card)}
+.wopt:disabled{opacity:.5;cursor:not-allowed}
+.wopt .wicon{width:38px;height:38px;border-radius:10px;flex:0 0 38px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff}
+.wopt .wtx{min-width:0;flex:1}
+.wopt .wtx b{display:block;font-size:14px}
+.wopt .wtx span{display:block;font-size:11px;color:var(--muted);margin-top:1px}
+.wopt .wtag{font-size:10px;font-weight:700;color:var(--ok);border:1px solid rgba(52,211,153,.4);background:rgba(52,211,153,.12);border-radius:999px;padding:2px 7px;white-space:nowrap}
+.wopt .wtag.warn{color:var(--warn);border-color:rgba(246,217,138,.4);background:rgba(246,217,138,.12)}
+.wsheet .wcancel{width:100%;margin-top:12px;background:transparent;border:0;color:var(--muted);font-size:12px;cursor:pointer;padding:6px}
+.wsheet .wnote{margin:12px 0 0;font-size:10px;color:var(--muted);line-height:1.5;text-align:center;border-top:1px dashed var(--line);padding-top:10px}
+/* Wallet rows with per-network chips — pick the wallet AND its network in one action,
+   so a mismatched combo is never even offered. */
+.wopt2{display:flex;align-items:center;gap:11px;width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.wopt2+.wopt2{margin-top:8px}
+.wopt2.disabled{opacity:.5}
+.wopt2 .wicon2{width:32px;height:32px;border-radius:9px;flex:0 0 32px;object-fit:cover;background:#fff}
+.wopt2 .w2body{min-width:0;flex:1}
+.wopt2 .w2name{font-size:13.5px;font-weight:700}
+.wopt2 .wnet-chips{display:flex;gap:6px;margin-top:5px}
+.wnet-chip{font:inherit;font-size:11px;font-weight:700;border-radius:7px;padding:4px 9px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.wnet-chip:hover{border-color:var(--accent);color:var(--accent)}
+.wnet-chip.mainnet{border-color:rgba(246,217,138,.5);color:var(--warn)}
+.wnet-chip.mainnet:hover{background:rgba(246,217,138,.12)}
 .contractbox{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px}
 .contractbox img{width:30px;height:30px;border-radius:7px;background:#fff;padding:3px;flex:0 0 30px}
 .contractbox b{font-size:13px;display:block}
@@ -222,32 +263,92 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 .chk input{accent-color:var(--accent);width:15px;height:15px}
 
 /* ── The note document (white paper, both themes) ── */
-.doc{background:#fff;color:#13202e;border:1px solid rgba(20,25,31,.12);border-radius:14px;overflow:hidden;box-shadow:0 18px 50px rgba(5,15,35,.35);margin:14px 0}
-.doc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:3px solid #f5c518}
+.doc{position:relative;background:#fff;color:#13202e;border:1.5px solid rgba(20,25,31,.28);border-radius:14px;overflow:hidden;box-shadow:0 18px 50px rgba(5,15,35,.35);margin:14px 0}
+/* Ribbon + engraved guilloche strip — the accent color follows the Brand
+   color (Brand tab) and falls back to the house yellow. */
+.doc-ribbon{border-top:4px solid #f5c518}   /* border, not background — borders survive default print settings */
+.doc-guilloche{display:none}
+.doc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1.5px solid rgba(20,25,31,.28)}
 .doc-head .co{display:flex;align-items:center;gap:10px;min-width:0}
 .doc-head .colo{width:38px;height:38px;border-radius:9px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none}
 .doc-head .con{font-size:16px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-head-r{display:flex;align-items:center;gap:8px;flex:none}
+.doc-serial{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.06em;color:#6b7686;white-space:nowrap}
+.doc-serial b{color:#33414f;font-weight:600}
 .doc-body{padding:18px}
 .doc-kick{text-align:center;font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#6b7686}
-.doc-title{text-align:center;font-size:19px;font-weight:800;letter-spacing:.02em;margin-top:3px}
+.doc-title{text-align:center;font-size:19px;font-weight:700;letter-spacing:.015em;margin-top:3px;font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif}
 .doc-sub{text-align:center;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.07em;color:#2456c8;margin-top:2px}
-.doc-legal{text-align:center;font-style:italic;color:#6b7686;font-size:12px;max-width:64ch;margin:10px auto 4px;line-height:1.55}
-.doc-amt{text-align:center;font-size:32px;font-weight:800;letter-spacing:-.02em;margin:6px 0 2px;font-variant-numeric:tabular-nums}
-.doc-sec{margin-top:14px;border-top:1px solid rgba(20,25,31,.12);padding-top:10px}
-.doc-sec .sh{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:600;margin-bottom:2px}
-.kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px dotted rgba(20,25,31,.09)}
-.kv:last-child{border-bottom:none}
+.doc-legal{text-align:center;font-style:italic;color:#6b7686;font-size:12px;max-width:64ch;margin:10px auto 4px;line-height:1.55;font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif}
+.doc-amt{text-align:center;font-size:32px;font-weight:600;letter-spacing:-.01em;margin:6px 0 0;font-variant-numeric:tabular-nums;font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif}
+.doc-amt-words{text-align:center;font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:#6b7686;margin:1px 0 8px}
+/* Chain of Control: one-line summary on the face; history expands on demand.
+   Paper gets a verify pointer instead of a dead button (.print-only), and an
+   expanded history prints as its own Endorsement Schedule (Allonge) page. */
+.chain-sum{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px}
+.chain-sum .mono{font-size:11px}
+.print-only{display:none}
+.allonge-head{display:none}
+.allonge-head .ah-t{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:#13202e}
+.allonge-head .ah-s{font-size:9px;color:#6b7686;margin-top:3px;line-height:1.5}
+/* Sections as cards — each block of the note is its own bordered panel with
+   a small line-icon badge, per the approved 2027 redesign. */
+.doc-sec{margin-top:16px;border:1.5px solid rgba(20,25,31,.22);border-radius:10px;background:#f7f9fc;padding:11px 14px}
+.doc-sec .sh{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:#13202e;margin-bottom:2px}
+.shead{display:flex;align-items:center;gap:8px;margin-bottom:6px;grid-column:1/-1;grid-row:1}
+.shead .sh{margin:0}
+.sic{width:22px;height:22px;border-radius:6px;background:#fff;border:1px solid rgba(20,25,31,.12);color:#2456c8;display:flex;align-items:center;justify-content:center;flex:none}
+.sic svg{width:12px;height:12px}
+/* Every row keeps its divider — the old :last-child exception left 2-col
+   grids lopsided (Maker ruled, Payee bare; Yield ruled, Pretermination
+   bare). Row dividers sit 30% lighter than before; the section-box borders
+   are untouched. */
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px dotted rgba(20,25,31,.15)}
 .kv .k{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#6b7686;flex:none}
 .kv .v{font-size:13.5px;font-weight:700;text-align:right;word-break:break-word}
 .kv .v small{display:block;font-weight:500;font-size:11px;color:#6b7686}
 .kv .v.mono{font-family:ui-monospace,monospace;font-size:11px;font-weight:500}
+/* Long free-text rows (e.g. Remarks): stack label over value so the text spans the full note width instead of wrapping tall in the narrow right column. */
+.kv.kv-wide{flex-direction:column;align-items:stretch;gap:2px}
+.kv.kv-wide .v{text-align:left;font-weight:600;font-size:12.5px;line-height:1.45;word-break:normal;overflow-wrap:anywhere}
+/* Two-column sections: short label/value pairs (Parties, Terms, Financials,
+   Registry, Terms & Conditions) sit side by side instead of stacked, roughly
+   halving the section's row count. Sections with long mono values (Chain of
+   Control, signature) stay single-column — width is what makes those legible. */
+.doc-sec.doc-2col{display:grid;grid-template-columns:1fr 1fr;column-gap:28px}
+/* Registry: true left/right column stacks (Reference/Issued by/Issued on
+   down the left, Audit anchor/Controller/Status down the right) rather than
+   the row-paired flow every other 2-col section uses. */
+.doc-sec.doc-cols{grid-auto-flow:column;grid-template-rows:auto repeat(3,auto)}
+.doc-sec.doc-2col>.sh{grid-column:1/-1}
+.doc-sec.doc-2col .kv-wide{grid-column:1/-1}
 .doc-checks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .doc-chk{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:#1f7a33;background:rgba(31,122,51,.09);border:1px solid rgba(31,122,51,.3);border-radius:6px;padding:4px 9px}
-.doc-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;border-top:1px solid rgba(20,25,31,.12);background:#fbfcfe}
+.doc-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 18px;border-top:1.5px solid rgba(20,25,31,.28);background:#fbfcfe}
 .doc-foot .lft{display:flex;align-items:center;gap:12px}
-.qrbox{width:60px;height:60px;border:1px solid rgba(20,25,31,.12);border-radius:8px;background:#fff;padding:4px;flex:none}
+/* One trust strip: identity, registration, settlement — equal-weight chips
+   on the same line as the QR + Verify. */
+.foot-chips{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.fchip{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1.5px solid rgba(20,25,31,.3);border-radius:999px;padding:6px 12px}
+.fchip .fic{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#2456c8;background:#f2f5fa;flex:none}
+/* fic-ok, not "ok": the app's global .ok status class (green toast text,
+   margin-top:8px) would bleed onto the icon and stretch this chip taller
+   than its neighbors — exactly the bug that name collision caused. */
+.fchip .fic-ok{color:#1f7a33;background:rgba(31,122,51,.1)}
+.fchip .fic img{width:16px;height:16px;object-fit:contain}
+/* nowrap keeps every chip exactly one icon + two single lines tall — long
+   text (the identity chip) widens the chip instead of wrapping it taller
+   than its neighbors; the footer flex-wrap moves whole chips to the next
+   row if width runs out. */
+.fchip .ft b{display:block;font-size:10.5px;color:#13202e;line-height:1.25;white-space:nowrap}
+.fchip .ft i{display:block;font-style:normal;font-size:9px;color:#6b7686;line-height:1.25;white-space:nowrap}
+.qrbox{width:60px;height:60px;border:1.5px solid rgba(20,25,31,.3);border-radius:8px;background:#fff;padding:4px;flex:none}
 .qrbox svg{width:100%;height:100%;display:block}
-.verify-btn{background:#f5c518;color:#1a1503;font-family:ui-monospace,monospace;font-weight:700;font-size:11.5px;letter-spacing:.07em;padding:10px 18px;border-radius:8px;display:inline-block;text-decoration:none}
+/* Border-defined, not fill-dependent: many print dialogs default to
+   "background graphics" off, which would drop the yellow fill and leave an
+   invisible button if the shape relied on it. The dark border always shows;
+   the dark text (#1a1503) already reads on bare white paper either way. */
+.verify-btn{background:#f5c518;color:#1a1503;border:1.5px solid #8d8a81;font-family:ui-monospace,monospace;font-weight:700;font-size:11.5px;letter-spacing:.07em;padding:10px 18px;border-radius:8px;display:inline-block;text-decoration:none}
 .badges2{display:flex;flex-direction:column;gap:8px}
 .badge2{display:flex;align-items:center;gap:8px}
 .badge2 .bic{width:24px;height:24px;flex:none;display:flex;align-items:center;justify-content:center}
@@ -258,7 +359,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 .doc-id .di{width:26px;height:26px;border-radius:7px;background:rgba(31,122,51,.1);color:#1f7a33;display:flex;align-items:center;justify-content:center;flex:0 0 26px}
 .doc-id b{font-size:11.5px;display:block;color:#13202e}
 .doc-id span{font-size:10.5px;color:#6b7686}
-.doc-sig{padding:10px 18px 14px;background:#fbfcfe;border-top:1px solid rgba(20,25,31,.12)}
+.doc-sig{padding:10px 18px 14px;background:#fbfcfe;border-top:1.5px solid rgba(20,25,31,.28)}
 .doc-sig .line{text-align:center;font-family:ui-monospace,monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:#6b7686;margin-bottom:6px}
 .doc-sig .sig{font-family:ui-monospace,monospace;font-size:9px;color:#6b7686;word-break:break-all;line-height:1.6}
 .doc-sig .sig b{color:#33414f;font-weight:600}
@@ -267,17 +368,46 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   .industries{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:72%;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:8px;scrollbar-width:none}
   .industries::-webkit-scrollbar{display:none}
   .industries .icard{scroll-snap-align:start}
-  .tabs{overflow-x:auto;scrollbar-width:none}
-  .tabs::-webkit-scrollbar{display:none}
-  .tabs button{flex:1 0 auto;padding-left:16px;padding-right:16px}
+  /* Portfolio + Six Instruments — one swipeable row instead of a wrapping grid */
+  .stats{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:56%;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
+  .stats::-webkit-scrollbar{display:none}
+  .stat{scroll-snap-align:start}
+  .instgrid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:56%;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
+  .instgrid::-webkit-scrollbar{display:none}
+  .instcard{scroll-snap-align:start}
   .row{flex-direction:column;gap:0}
+  /* App-style bottom nav — translucent rounded blue glass, icon + label, floating above content */
+  .app{padding-bottom:104px}
+  .tabs{
+    position:fixed;left:12px;right:12px;bottom:14px;
+    display:flex;justify-content:space-around;align-items:center;gap:2px;
+    margin:0;padding:7px 6px calc(7px + env(safe-area-inset-bottom));
+    background:rgba(37,86,200,.41);
+    backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);
+    border:1px solid rgba(255,255,255,.24);border-radius:30px;
+    box-shadow:0 12px 34px rgba(5,15,35,.35);z-index:40
+  }
+  .tabs button{flex:1 1 0;flex-direction:column;justify-content:center;gap:2px;color:rgba(255,255,255,.92);font-size:10px;padding:7px 2px;border-radius:999px;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .tabs button.on{color:#fff;background:rgba(255,255,255,.28);text-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .tabicon{display:flex}
+  html[data-theme="light"] .tabs{background:rgba(170,185,248,.13);border-color:rgba(4,32,151,.18)}
+  html[data-theme="light"] .tabs button{color:#042097;text-shadow:none}
+  html[data-theme="light"] .tabs button.on{color:#042097;background:#c9d9eb;text-shadow:none}
+}
+/* ── Tablet + desktop: header nav, glass on scroll ── */
+@media (min-width:601px){
+  .topbar.scrolled{
+    background:rgba(37,86,200,.62);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    padding:10px 16px;
+    box-shadow:0 10px 34px rgba(5,15,35,.28)
+  }
+  .topbar.scrolled .tabs{background:rgba(255,255,255,.96)}
 }
 /* ── Desktop: a real, wider web app ── */
 @media (min-width:900px){
   .app{max-width:1160px;padding:0 24px 60px}
   .topbar{padding:16px 4px}
-  .banner{max-width:100%}
-  .tabs{max-width:760px;margin-left:auto;margin-right:auto}
   /* every tab uses the full app width — uniform with the dashboard */
   .doc{margin:14px 0}
   .hero{padding:34px 32px 26px}
@@ -290,7 +420,61 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   .invlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px}
   .issue-2col{display:grid;grid-template-columns:1fr;gap:0}
 }
-@media print{.topbar,.tabs,.banner,.actions,.foot,.no-print,.stepper,.audit,.idbadge{display:none!important}body{background:#fff}.app{max-width:none;padding:0}.doc{box-shadow:none;border:none;margin:0}}
+@media print{
+  .topbar,.tabs,.banner,.actions,.foot,.no-print,.stepper,.audit,.idbadge{display:none!important}
+  html,body{background:#fff;height:auto!important;margin:0!important}
+  /* Start at the very top — no forced full-page height (that pushed content to the middle
+     and left a large blank below), no letting the doc get bumped to a fresh page. */
+  .app{max-width:none;padding:0!important;margin:0!important;min-height:0!important;height:auto!important}
+  #view-note{margin:0!important}
+  .doc{box-shadow:none;border:none;margin:0!important;page-break-inside:auto}
+  /* Vertical tightening — fit the whole instrument on one bond page.
+     Do NOT force a page size — let the paper the user selects (Letter, Long/Folio, A4)
+     drive it. Forcing size:A4 made the printer center the A4 box on differently-sized
+     paper, leaving gaps above and below. */
+  @page{size:auto;margin:9mm}
+  .doc-head{padding:9px 16px;border-bottom-width:2px}
+  .doc-body{padding:10px 16px}
+  .doc-kick{font-size:8.5px}
+  .doc-title{font-size:16px}
+  .doc-sub{font-size:9px}
+  .doc-legal{font-size:10px;margin:6px auto 2px;line-height:1.4;max-width:70ch}
+  .doc-amt{font-size:23px;margin:4px 0 0}
+  /* Printers dither semi-transparent borders into faint gray — print gets
+     SOLID border colors (no alpha) so every box edge survives on paper.
+     #8a94a0 ≈ 50% strength: visible without reading heavy. */
+  .doc,.doc-sec,.fchip,.qrbox,.sic{border-color:#8a94a0}
+  .doc-head,.doc-foot,.doc-sig{border-color:#8a94a0}
+  .kv{border-bottom-color:#adb4bc}
+  .doc-sec{margin-top:8px;border-width:1.25px;padding:5px 8px}
+  .doc-sec .sh{font-size:8.5px;margin-bottom:1px}
+  .shead{margin-bottom:2px;gap:6px}
+  .sic{width:15px;height:15px;border-radius:4px}
+  .sic svg{width:9px;height:9px}
+  .doc-sec.doc-2col{column-gap:22px}
+  .kv{padding:2px 0}
+  .doc-ribbon{border-top-width:3px}
+  .fchip{padding:3px 9px}
+  .fchip .fic{width:20px;height:20px}
+  .fchip .fic svg{width:11px!important;height:11px!important}
+  .fchip .fic img{width:13px;height:13px}
+  .fchip .ft b{font-size:9.5px}
+  .fchip .ft i{font-size:8px}
+  .kv .v{font-size:12px}
+  .kv.kv-wide .v{font-size:11px;line-height:1.35}
+  .doc-checks{margin-top:4px;gap:4px}
+  .doc-chk{padding:2px 6px;font-size:9px}
+  .print-only{display:block;font-size:9px;color:#6b7686;margin-top:4px}
+  /* WYSIWYG allonge: the history prints only if it was expanded on screen —
+     and then as its own page, headed as an Endorsement Schedule (Allonge). */
+  #chainTimeline:not([hidden]){page-break-before:always;padding-top:22px}
+  #chainTimeline:not([hidden]) .allonge-head{display:block;margin:0 0 12px;padding-bottom:9px;border-bottom:2px solid #13202e}
+  .doc-id{padding:6px 16px}
+  .doc-foot{padding:7px 16px}
+  .doc-sig{padding:7px 16px 9px}
+  .doc-sig .line{font-size:7.5px;margin-bottom:3px}
+  .doc-sig .sig{font-size:7px;line-height:1.4}
+}
 </style>
 </head><body>
 <div class="app">
@@ -303,6 +487,24 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
         <span class="sub">by ISET · on Stellar</span>
       </div>
     </div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="home" class="on">
+        <span class="tabicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9"/></svg></span>
+        <span class="tablabel">Home</span>
+      </button>
+      <button data-tab="issue">
+        <span class="tabicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
+        <span class="tablabel">Issue</span>
+      </button>
+      <button data-tab="notes">
+        <span class="tabicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span>
+        <span class="tablabel">Docs</span>
+      </button>
+      <button data-tab="verify">
+        <span class="tabicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
+        <span class="tablabel">Verify</span>
+      </button>
+    </nav>
     <div class="topactions">
       <button class="iconbtn" id="themeBtn" aria-label="Toggle light or dark theme" title="Toggle theme"></button>
       <button class="iconbtn" id="brandBtn" aria-label="Your brand" title="Your brand">
@@ -313,15 +515,6 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       </div>
     </div>
   </header>
-
-  <div class="banner"><span id="bannerText">Stellar testnet · records are sandbox — fully signed &amp; verifiable, no legal effect.</span><span class="netswitch" id="netSwitch" role="group" aria-label="Network"><button type="button" data-net="testnet">Testnet</button><button type="button" data-net="mainnet">Mainnet</button></span></div>
-
-  <nav class="tabs" id="tabs">
-    <button data-tab="home" class="on">Dashboard</button>
-    <button data-tab="issue">Issue</button>
-    <button data-tab="notes">Documents</button>
-    <button data-tab="verify">Verify</button>
-  </nav>
 
   <main>
     <!-- ── DASHBOARD / HOME ── -->
@@ -337,7 +530,6 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
         <div class="trust">
           <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Post-quantum signed</span>
           <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg> MLETR control</span>
-          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/></svg> Settles on Stellar</span>
         </div>
       </div>
 
@@ -440,9 +632,14 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       <button class="btn ghost sm no-print" id="backBtn" style="margin-bottom:10px">← Back</button>
       <div class="stepper no-print" id="docStepper"></div>
       <div class="doc" id="docCard">
+        <div class="doc-ribbon" id="docRibbon"></div>
+        <div class="doc-guilloche" id="docGuilloche"></div>
         <div class="doc-head">
           <div class="co"><span class="colo" id="dLogo">MT</span><span class="con" id="dCompany">—</span></div>
-          <span class="docbadge live" id="dBadge">ISSUED</span>
+          <div class="doc-head-r">
+            <span class="doc-serial" id="dSerial"></span>
+            <span class="docbadge live" id="dBadge">ISSUED</span>
+          </div>
         </div>
         <div class="doc-body">
           <div class="doc-kick" id="dKick">Electronic Promissory Note</div>
@@ -450,34 +647,36 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
           <div class="doc-sub" id="dSub">ePN · Issued via ISET eTR</div>
           <p class="doc-legal" id="dLegal">—</p>
           <div class="doc-amt" id="dAmount">—</div>
+          <div class="doc-amt-words" id="dAmountWords"></div>
           <div id="dSections"></div>
-          <div class="doc-sec"><div class="sh">Registry</div>
+          <div class="doc-sec doc-2col doc-cols">
+            <div class="shead"><span class="sic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span><div class="sh">Registry</div></div>
             <div class="kv"><span class="k">Reference</span><span class="v mono" id="dRef">—</span></div>
-            <div class="kv"><span class="k">Controller — Holder</span><span class="v" id="dHolder">—</span></div>
             <div class="kv"><span class="k">Issued by</span><span class="v" id="dIssuer">—</span></div>
-            <div class="kv"><span class="k">Status</span><span class="v" id="dStatus">—</span></div>
             <div class="kv"><span class="k">Issued on</span><span class="v" id="dIssuedOn">—</span></div>
             <div class="kv"><span class="k">Audit anchor</span><span class="v mono" id="dAudit">—</span></div>
+            <div class="kv"><span class="k">Controller — Holder</span><span class="v" id="dHolder">—</span></div>
+            <div class="kv"><span class="k">Status</span><span class="v" id="dStatus">—</span></div>
           </div>
-        </div>
-        <div class="doc-id">
-          <span class="di"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-          <div><b id="dIdName">Issuer verified via ISET registry</b><span id="dIdSub">TIN on file · personal data stays off-chain</span></div>
         </div>
         <div class="doc-foot">
           <div class="lft">
             <div class="qrbox" id="qrBox" aria-label="Verification QR"></div>
             <a class="verify-btn" id="dVerifyBtn" href="#">VERIFY</a>
           </div>
-          <div class="badges2">
-            <div class="badge2">
-              <span class="bic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f7a33" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(31,122,51,.1)"/><path d="M9 12l2 2 4-4"/></svg></span>
-              <span class="bt">Secured<b>by ISET eTR</b></span>
-            </div>
-            <div class="badge2">
-              <span class="bic"><img src="/assets/stellar.png" alt="Stellar"></span>
-              <span class="bt">Settlement:<b id="dSettleCcy">Stellar USDC</b></span>
-            </div>
+          <div class="foot-chips">
+            <span class="fchip">
+              <span class="fic fic-ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+              <span class="ft"><b id="dIdName">Issuer verified via ISET registry</b><i id="dIdSub">TIN on file · personal data stays off-chain</i></span>
+            </span>
+            <span class="fchip">
+              <span class="fic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
+              <span class="ft"><b>Registered: ISET eTR</b><i>Post-quantum signed · MLETR aligned</i></span>
+            </span>
+            <span class="fchip">
+              <span class="fic"><img src="/assets/stellar.png" alt="Stellar"></span>
+              <span class="ft"><b>Settlement</b><i id="dSettleCcy">Stellar USDC</i></span>
+            </span>
           </div>
         </div>
         <div class="doc-sig">
@@ -583,7 +782,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 
   <footer class="foot">
     <div class="footlinks"><button data-go="brand">Brand</button> · <button data-go="verify">Verify</button></div>
-    Issued &amp; signed by ISET · post-quantum signatures (ML-DSA-65) · settling in Stellar USDC.
+    Signed &amp; registered via ISET · post-quantum signatures (ML-DSA-65) · settled on the Stellar network.
     <div style="margin-top:6px;opacity:.5">© 2026 ISET. All rights reserved.</div>
   </footer>
 </div>
@@ -599,12 +798,16 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   /* Network config. Mainnet is the production deployment of epn_escrow; testnet is
      the free interactive demo (friendbot-funded). Choice persists per device. */
   var NETWORKS={
-    testnet:{ label:'Testnet', contract:'CDTZDPLIB7OZ5LTCXAEY4GWUQTDKVGEGSSUWRF56MUBDNE5DSNSMXEGH',
+    /* endorse: the network's contract has the two-step endorsement upgrade
+       (endorse/accept). Testnet runs the upgraded contract; mainnet keeps the
+       pre-endorsement deployment until its own redeploy — the UI hides the
+       endorsement actions there rather than offer calls the contract lacks. */
+    testnet:{ label:'Testnet', contract:'CDZMFQBSZO44IX5TMHY55PYG6I3JOUEZFWSRMFJCUAF2AKWOOWX2H3IT',
       rpc:'https://soroban-testnet.stellar.org', passphrase:'Test SDF Network ; September 2015',
-      albedo:'testnet', expert:'testnet', friendbot:true },
+      albedo:'testnet', expert:'testnet', friendbot:true, endorse:true },
     mainnet:{ label:'Mainnet', contract:'CBDFHJ2V7YBQGF4PNDPTKAALHIE6PYRBL6PVAGMJA5OFFEUMHJYQLL7O',
       rpc:'https://mainnet.sorobanrpc.com', passphrase:'Public Global Stellar Network ; September 2015',
-      albedo:'public', expert:'public', friendbot:false }
+      albedo:'public', expert:'public', friendbot:false, endorse:false }
   };
   function readNet(){
     var q=new URLSearchParams(location.search).get('net');
@@ -619,12 +822,53 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  function fmtAmt(n){ var x=Number(n); return isFinite(x)?x.toLocaleString('en-US',{maximumFractionDigits:2}):String(n); }
+  /* Every money value renders with two decimals, everywhere — document, live
+     summary, docs list, dashboard, share text, verification. A stated sum of
+     "PHP 1,000,000" is ambiguous about centavos; "PHP 1,000,000.00" is not. */
+  function fmtAmt(n){ var x=Number(n); return isFinite(x)?x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):String(n); }
+  /* Face-value formatting: always two decimals, and the amount spelled out in
+     words below it — the classic anti-tamper convention on paper instruments. */
+  function fmtAmt2(n){ var x=Number(n); return isFinite(x)?x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):String(n); }
+  var W_ONES=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  var W_TENS=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  function w3(n){ // 0-999
+    var s='';
+    if(n>=100){ s+=W_ONES[Math.floor(n/100)]+' Hundred'; n%=100; if(n) s+=' '; }
+    if(n>=20){ s+=W_TENS[Math.floor(n/10)]; n%=10; if(n) s+='-'+W_ONES[n]; }
+    else if(n>0){ s+=W_ONES[n]; }
+    return s;
+  }
+  function numToWords(n){
+    n=Math.floor(Math.abs(Number(n)||0));
+    if(n===0) return 'Zero';
+    var parts=[], scales=[[1e12,'Trillion'],[1e9,'Billion'],[1e6,'Million'],[1e3,'Thousand'],[1,'']];
+    scales.forEach(function(sc){
+      if(n>=sc[0]){ var q=Math.floor(n/sc[0]); n%=sc[0]; parts.push(w3(q)+(sc[1]?' '+sc[1]:'')); }
+    });
+    return parts.join(' ');
+  }
+  var CCY_WORDS={PHP:'Pesos',USD:'US Dollars',EUR:'Euros',GBP:'Pounds Sterling',JPY:'Yen',SGD:'Singapore Dollars',AUD:'Australian Dollars',HKD:'Hong Kong Dollars',CNY:'Yuan',AED:'Dirhams',INR:'Rupees'};
+  function amountInWords(amt,ccy){
+    var x=Number(amt)||0, i=Math.floor(x), c=Math.round((x-i)*100);
+    var tail=c>0?(' and '+(c<10?'0':'')+c+'/100'):'';
+    return numToWords(i)+' '+(CCY_WORDS[ccy]||ccy)+tail+' Only';
+  }
   function trunc(k){ return k?k.slice(0,4)+'…'+k.slice(-4):''; }
   function initials(n){ var w=String(n||'').trim().split(/\s+/).filter(Boolean); return ((w[0]||'e')[0]+(w[1]?w[1][0]:'')).toUpperCase()||'eR'; }
   function fmtDate(d){ if(!d)return '—'; try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});}catch(e){return d;} }
   function today(){ return new Date().toISOString().slice(0,10); }
-  function addDays(d,n){ var x=new Date((d||today())+'T00:00:00'); x.setDate(x.getDate()+n); return x.toISOString().slice(0,10); }
+  /* Pure calendar-date arithmetic, no timezone in the loop. The old version
+     parsed "YYYY-MM-DDT00:00:00" as LOCAL midnight, then read the answer back
+     via toISOString() (UTC) — for any timezone ahead of UTC (e.g. PH, +8),
+     that mismatch silently returned the day BEFORE the correct one. UTC-only
+     parse + arithmetic + format means "+365 days" always lands exactly a
+     year later, in every timezone. */
+  function addDays(d,n){
+    var p=(d||today()).split('-').map(Number);
+    var x=new Date(Date.UTC(p[0],p[1]-1,p[2]));
+    x.setUTCDate(x.getUTCDate()+n);
+    return x.toISOString().slice(0,10);
+  }
   function nowStamp(){ return new Date().toISOString(); }
   function fmtStamp(s){ try{ return new Date(s).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(e){ return s; } }
   function toast(m,kind){ var t=document.createElement('div'); t.className='toast'+(kind==='err'?' err':''); t.textContent=m; $('toasts').appendChild(t); setTimeout(function(){t.remove();},3200); }
@@ -638,7 +882,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     }catch(e){ return '0'.repeat(64); }
   }
 
-  var CCY=[['PHP','PHP — Philippine Peso'],['USDC','USDC — Stellar USDC'],['USD','USD — US Dollar'],['EUR','EUR — Euro'],['SGD','SGD — Singapore Dollar'],['JPY','JPY — Yen'],['CNY','CNY — Renminbi'],['AED','AED — UAE Dirham']];
+  var CCY=[['PHP','PHP — Philippine Peso'],['USDC','USDC — Stellar USDC'],['XLM','XLM — Stellar Lumen'],['USD','USD — US Dollar'],['EUR','EUR — Euro'],['SGD','SGD — Singapore Dollar'],['JPY','JPY — Yen'],['CNY','CNY — Renminbi'],['AED','AED — UAE Dirham']];
   function ccyOpts(sel){ return CCY.map(function(c){ return '<option value="'+c[0]+'"'+(c[0]===sel?' selected':'')+'>'+c[1]+'</option>'; }).join(''); }
 
   /* ─────────────────────────────────────────────────────────────────────────
@@ -656,18 +900,29 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       onchain:true,
       legal:'For value received, the maker unconditionally promises to pay the payee the principal sum stated under the terms below:',
       form:[
-        [{k:'maker',l:'Maker — who promises to pay',ph:'Manila Trade, Inc.'},{k:'maker_tin',l:'Maker TIN',t:'tin'}],
-        [{k:'payee',l:'Pay to the order of — payee',ph:'XYZ Manufacturing, Inc.'},{k:'payee_tin',l:'Payee TIN',t:'tin'}],
-        [{k:'amount',l:'Principal amount',t:'amount'}],
+        [{k:'maker',l:'Maker — who promises to pay *',ph:'Manila Trade, Inc.'},{k:'maker_tin',l:'Maker TIN *',t:'tin'}],
+        [{k:'payee',l:'Pay to the order of — payee *',ph:'XYZ Manufacturing, Inc.'},{k:'payee_tin',l:'Payee TIN *',t:'tin'}],
+        /* No payee-wallet field at issuance: the maker's wallet holds the
+           fresh note (signing = making; control = delivery), and control
+           reaches the payee through the endorse → accept flow — the same
+           path any later holder uses. */
+        [{k:'amount',l:'Principal amount *',t:'amount'}],
         [{k:'interest_rate',l:'Interest rate % p.a.',t:'num',ph:'5.5'},{k:'wht_rate',l:'Withholding tax %',t:'num',ph:'1'}],
-        [{k:'issue_date',l:'Issue date',t:'date'},{k:'maturity_date',l:'Maturity date',t:'date',plus:90}],
-        [{k:'place',l:'Place of issue',t:'text',def:'Philippines'},{k:'purpose',l:'Purpose of note',t:'select',opts:['Working Capital','Trade Finance (Import/Export)','Inventory Financing','Equipment / Asset Purchase','General Business Operations']}],
+        [{k:'issue_date',l:'Issue date *',t:'date'},{k:'maturity_date',l:'Maturity date *',t:'date',plus:365}],
+        [{k:'repay_freq',l:'Repayment frequency *',t:'select',opts:['Single payment at maturity','Monthly','Quarterly','Semi-annual','Annual']},{k:'place',l:'Place of issue *',t:'text',def:'Philippines'}],
         [{k:'settle',l:'Settlement currency',t:'settle'}],
-        [{k:'remarks',l:'Remarks (optional)',t:'text',ph:'Reference or terms note'}]
+        [{k:'purpose',l:'Purpose of note *',t:'select',opts:['Working Capital','Trade Finance (Import/Export)','Inventory Financing','Equipment / Asset Purchase','General Business Operations']},{k:'remarks',l:'Remarks',t:'text',ph:'Reference or terms note'}],
+        /* Stipulations — one open, full-width canvas: the issuer writes
+           whatever terms the deal needs (renewal, collateral, liquidated
+           damages, anything else). Empty = the legal meaning of silence:
+           no auto-renewal, unsecured, none stipulated. Yield & pretermination
+           are NOT part of this field: those two are derived from what the
+           contract actually enforces. */
+        [{k:'stipulations',l:'Terms & conditions — stipulations',t:'area'}]
       ],
       doc:[
-        {h:'Parties',rows:[{k:'Maker (Promisor)',f:'maker',tin:'maker_tin'},{k:'Pay to the order of:',f:'payee',tin:'payee_tin'}]},
-        {h:'Terms',rows:[{k:'Interest rate (p.a.)',f:'interest_rate',fmt:'pct',fb:'Non-interest-bearing'},{k:'Withholding tax',f:'wht_rate',fmt:'pct',opt:1},{k:'Maturity date',f:'maturity_date',fmt:'date'},{k:'Place of issue',f:'place'},{k:'Purpose',f:'purpose'},{k:'Remarks',f:'remarks',opt:1}]}
+        {h:'Parties',cols:2,rows:[{k:'Maker (Promisor)',f:'maker',tin:'maker_tin'},{k:'Pay to the order of:',f:'payee',tin:'payee_tin'}]},
+        {h:'Terms',cols:2,rows:[{k:'Interest rate (p.a.)',f:'interest_rate',fmt:'pct',fb:'Non-interest-bearing'},{k:'Withholding tax',f:'wht_rate',fmt:'pct',opt:1},{k:'Place of issue',f:'place'},{k:'Purpose',f:'purpose'},{k:'Maturity date',f:'maturity_date',fmt:'date'},{k:'Remarks',f:'remarks',opt:1},{k:'Repayment',f:'repay_freq',fmt:'repayment',wide:1}]}
       ]
     },
     eBE:{
@@ -816,26 +1071,42 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 
   /* ── Network switcher (banner toggle + Home segment share one handler) ── */
   function paintNet(){
-    document.querySelectorAll('#netSeg button, #netSwitch button').forEach(function(b){ b.classList.toggle('on',b.dataset.net===NET); });
-    $('netNote').innerHTML = (NET==='mainnet')
+    document.querySelectorAll('#netSeg button').forEach(function(b){ b.classList.toggle('on',b.dataset.net===NET); });
+    if($('netNote')) $('netNote').innerHTML = (NET==='mainnet')
       ? 'Mainnet is live. Issuing and settling here submit <b>real transactions</b> and spend real XLM from your wallet.'
       : 'Testnet is free — accounts are auto-funded, and nothing costs real money. Switch to mainnet to transact for real.';
-    $('bannerText').innerHTML = (NET==='mainnet')
-      ? 'Stellar <b>mainnet</b> · real transactions · records stay sandbox — no legal effect.'
-      : 'Stellar testnet · free &amp; auto-funded · records are sandbox — no legal effect.';
   }
   function switchNet(want){
     if(want===NET) return;
     if(want==='mainnet' && !confirm('Switch to Stellar mainnet?\n\nIssuing and settling will submit real transactions and spend real XLM from your connected wallet.')) return;
     store('epn-net',want); location.search='?net='+want;
   }
-  document.querySelectorAll('#netSeg button, #netSwitch button').forEach(function(b){
+  /* In-memory network switch (no reload) — used to auto-adopt the connected wallet's network. */
+  function applyNet(want){
+    if((want!=='mainnet'&&want!=='testnet')||want===NET) return false;
+    NET=want; CFG=NETWORKS[NET]; RPC_URL=CFG.rpc; window.SOROBAN_CONTRACT_ID=CFG.contract;
+    store('epn-net',want);
+    if(kit&&kit.setNetwork){ try{ kit.setNetwork(CFG.passphrase); }catch(e){} }
+    paintNet();
+    if(window.checkMainnetFunding) window.checkMainnetFunding();
+    if(typeof refreshWalletStat==='function') refreshWalletStat();
+    return true;
+  }
+  document.querySelectorAll('#netSeg button').forEach(function(b){
     b.addEventListener('click',function(){ switchNet(b.dataset.net); });
   });
   paintNet();
 
+  /* Desktop header glass-on-scroll — mobile has no top-nav glass, only the bottom bar does. */
+  (function(){
+    var tb=$('topbar')||document.querySelector('.topbar'); if(!tb) return;
+    function paint(){ tb.classList.toggle('scrolled', window.scrollY>8); }
+    window.addEventListener('scroll', paint, {passive:true});
+    paint();
+  })();
+
   /* ── Rotating hero line ── */
-  var LINES=['The record is the instrument.','Signed. Registered. Verifiable.','Six documents, one signing root.','Settles on Stellar.'];
+  var LINES=['The record is the instrument.','Signed. Registered. Verifiable.','Six documents, one signing root.','Settles on Stellar network.'];
   var li=0; setInterval(function(){ li=(li+1)%LINES.length; var el=$('heroLine'); if(!el)return; el.classList.remove('hero-rot'); void el.offsetWidth; el.textContent=LINES[li]; el.classList.add('hero-rot'); },3600);
 
   /* ── Instrument pickers ── */
@@ -862,11 +1133,17 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 
   /* ── Connect (Freighter → Albedo) ── */
   function refreshWalletStat(){ if(!$('view-home').hidden && $('statsGrid')) renderDashboard(); }
-  function setConnected(pk){
-    window.STELLAR_PUBKEY=pk; store('epn-wallet',pk);
-    $('connectBox').innerHTML='<span class="pill" id="walletPill" title="'+esc(pk)+' — click to disconnect"><span class="dot"></span>'+esc(trunc(pk))+'</span>';
+  var WALLET_LABELS={ freighter:'Freighter', albedo:'Albedo', xbull:'xBull', rabet:'Rabet', lobstr:'Lobstr', hana:'Hana', hot:'HOT' };
+  function walletLabel(kind,fallback){ return WALLET_LABELS[kind]||fallback||(kind?kind.charAt(0).toUpperCase()+kind.slice(1):'Wallet'); }
+  function setConnected(pk,kind,label){
+    kind=kind||window.STELLAR_WALLET||'freighter';
+    window.STELLAR_PUBKEY=pk; window.STELLAR_WALLET=kind;
+    store('epn-wallet',pk); store('epn-wallet-kind',kind);
+    label=label||walletLabel(kind);
+    store('epn-wallet-label',label);
+    $('connectBox').innerHTML='<span class="pill" id="walletPill" title="'+esc(pk)+' · '+esc(label)+' — click to disconnect"><span class="dot"></span>'+esc(trunc(pk))+'</span>';
     $('walletPill').addEventListener('click',function(){
-      if(confirm('Disconnect this wallet from the app?')){ window.STELLAR_PUBKEY=null; store('epn-wallet',null); mountConnectBtn(); toast('Wallet disconnected'); refreshWalletStat(); }
+      if(confirm('Disconnect this wallet from the app?')){ window.STELLAR_PUBKEY=null; window.STELLAR_WALLET=null; window.STELLAR_VIA_KIT=false; store('epn-wallet',null); store('epn-wallet-kind',null); store('epn-wallet-label',null); if(kit&&kit.disconnect){try{kit.disconnect();}catch(e){}} if(typeof clearNetHint==='function')clearNetHint(); mountConnectBtn(); toast('Wallet disconnected'); refreshWalletStat(); }
     });
     if(window.checkMainnetFunding) window.checkMainnetFunding();
     refreshWalletStat();
@@ -875,40 +1152,180 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     $('connectBox').innerHTML='<button class="btn sm" id="connectBtn">Connect</button>';
     $('connectBtn').addEventListener('click',connect);
   }
-  async function connect(){
+  function freighterInstalled(){ return !!window.freighterApi; }
+  async function connectFreighter(){
     var api=window.freighterApi;
-    if(api){
-      try{
-        var installed=true;
-        if(api.isConnected){ try{ var ic=await api.isConnected(); installed=(ic&&typeof ic==='object')?ic.isConnected!==false:ic!==false; }catch(e){ installed=true; } }
-        if(installed){
-          var addr=null;
-          if(api.requestAccess){ var r=await api.requestAccess(); if(r&&r.error)throw new Error(r.error.message||r.error); addr=(r&&typeof r==='object')?(r.address||r.publicKey):r; }
-          if(!addr&&api.getAddress){ var g=await api.getAddress(); addr=(g&&g.address)||g; }
-          if(!addr&&api.getPublicKey) addr=await api.getPublicKey();
-          if(addr&&typeof addr==='string'&&addr[0]==='G'){ setConnected(addr); toast('Wallet connected · '+trunc(addr)); return; }
-        }
-      }catch(e){
-        var m=(e&&e.message)||'';
-        if(/reject|denied|declin/i.test(m)){ toast('Connect cancelled','err'); return; }
+    if(!api){ toast('Freighter not found — install it at freighter.app','err'); window.open('https://www.freighter.app/','_blank','noopener'); return; }
+    try{
+      if(api.isConnected){ try{ await api.isConnected(); }catch(e){} }
+      var addr=null;
+      if(api.requestAccess){ var r=await api.requestAccess(); if(r&&r.error)throw new Error(r.error.message||r.error); addr=(r&&typeof r==='object')?(r.address||r.publicKey):r; }
+      if(!addr&&api.getAddress){ var g=await api.getAddress(); addr=(g&&g.address)||g; }
+      if(!addr&&api.getPublicKey) addr=await api.getPublicKey();
+      if(addr&&typeof addr==='string'&&addr[0]==='G'){ setConnected(addr,'freighter'); toast('Freighter connected · '+trunc(addr)); return; }
+      throw new Error('no key returned');
+    }catch(e){
+      var m=(e&&e.message)||'';
+      toast(/reject|denied|declin/i.test(m)?'Connect cancelled':'Freighter connect failed','err');
+    }
+  }
+  async function connectAlbedo(){
+    if(!(window.albedo&&window.albedo.publicKey)){ toast('Albedo unavailable — check your connection','err'); return; }
+    try{
+      var res=await window.albedo.publicKey({});
+      if(res&&res.pubkey&&res.pubkey[0]==='G'){ setConnected(res.pubkey,'albedo'); toast('Albedo connected · '+trunc(res.pubkey)); return; }
+      throw new Error('no key returned');
+    }catch(e2){
+      var m=(e2&&e2.message)||'';
+      toast(/reject|denied|declin|closed/i.test(m)?'Connect cancelled':'Albedo connect failed','err');
+    }
+  }
+  /* ── Stellar Wallets Kit (all wallets) — primary path; the sheet below is the fallback ── */
+  var kit=null;
+  function getKit(){
+    if(kit) return kit;
+    if(!(window.SWK&&window.SWK.StellarWalletsKit)) return null;
+    try{
+      kit=new window.SWK.StellarWalletsKit({
+        network: CFG.passphrase,                 // WalletNetwork string === our passphrase
+        selectedWalletId: window.SWK.FREIGHTER_ID,
+        modules: window.SWK.allowAllModules()
+      });
+    }catch(e){ console.warn('Kit init failed',e); kit=null; }
+    return kit;
+  }
+  /* Which network(s) each wallet reliably works on. Albedo and xBull are request-scoped (they sign
+     for whatever network the app asks) so both work. Freighter has its own Testnet/Mainnet switch
+     in its settings — offer both, matching what it actually supports. HOT Wallet hasn't been
+     confirmed to honor a network switch, so it stays Mainnet-only until verified otherwise. */
+  function netSupportFor(name){
+    var n=(name||'').toLowerCase();
+    if(n.indexOf('albedo')>=0) return ['testnet','mainnet'];
+    if(n.indexOf('xbull')>=0) return ['testnet','mainnet'];
+    if(n.indexOf('freighter')>=0) return ['testnet','mainnet'];
+    if(n.indexOf('hot')>=0) return ['mainnet'];
+    return ['mainnet'];   // conservative default for any other wallet we haven't verified
+  }
+  var NET_LABEL={testnet:'Testnet',mainnet:'Mainnet'};
+  /* Connect flow, built on the Kit: pick the wallet AND its network in one action, so a mismatched
+     combo is never even offered — this replaces relying on the Kit's own generic modal. */
+  async function connectWithChips(){
+    var k=getKit(); if(!k) return false;
+    var wallets;
+    try{ wallets=await k.getSupportedWallets(); }catch(e){ return false; }
+    if(!wallets||!wallets.length) return false;
+    wallets=wallets.slice().sort(function(a,b){ return (b.isAvailable?1:0)-(a.isAvailable?1:0); });
+    if($('walletSheet'))return true;
+    var scrim=document.createElement('div');
+    scrim.className='wsheet-scrim'; scrim.id='walletSheet';
+    var rows=wallets.map(function(w){
+      if(!w.isAvailable){
+        return '<div class="wopt2 disabled"><img class="wicon2" src="'+esc(w.icon||'')+'" alt=""><div class="w2body"><div class="w2name">'+esc(w.name)+'</div></div><span class="wtag warn">Not available</span></div>';
       }
+      var nets=netSupportFor(w.name);
+      var chips=nets.map(function(net){ return '<button type="button" class="wnet-chip'+(net==='mainnet'?' mainnet':'')+'" data-id="'+esc(w.id)+'" data-name="'+esc(w.name)+'" data-net="'+net+'">'+NET_LABEL[net]+'</button>'; }).join('');
+      return '<div class="wopt2"><img class="wicon2" src="'+esc(w.icon||'')+'" alt=""><div class="w2body"><div class="w2name">'+esc(w.name)+'</div><div class="wnet-chips">'+chips+'</div></div></div>';
+    }).join('');
+    scrim.innerHTML=
+      '<div class="wsheet" role="dialog" aria-modal="true" aria-label="Connect a Stellar wallet">'+
+        '<h3>Connect a wallet</h3>'+
+        '<p class="wsub">Pick a wallet and the network to use — connecting only shares your public Stellar address. You approve every transaction inside your wallet.</p>'+
+        rows+
+        '<button class="wcancel" id="wCancel">Cancel</button>'+
+      '</div>';
+    document.body.appendChild(scrim);
+    requestAnimationFrame(function(){ scrim.classList.add('on'); });
+    scrim.addEventListener('click',function(ev){ if(ev.target===scrim)closeWalletSheet(); });
+    document.addEventListener('keydown',walletSheetEsc);
+    $('wCancel').addEventListener('click',closeWalletSheet);
+    scrim.querySelectorAll('.wnet-chip').forEach(function(chip){
+      chip.addEventListener('click',async function(){
+        var id=chip.dataset.id, name=chip.dataset.name, want=chip.dataset.net;
+        if(want==='mainnet' && want!==NET && !confirm('Switch to Stellar mainnet?\n\nIssuing and settling will submit real transactions and spend real XLM from your connected wallet.')) return;
+        applyNet(want);
+        closeWalletSheet();
+        try{
+          k.setWallet(id);
+          var res=await k.getAddress();
+          var addr=(res&&res.address)||res;
+          if(!(addr&&typeof addr==='string'&&addr[0]==='G')){ toast('No address returned by wallet','err'); return; }
+          window.STELLAR_VIA_KIT=true;
+          setConnected(addr, id, name);
+          toast(name+' connected · '+trunc(addr)+' · '+NET_LABEL[want]);
+        }catch(e){ var m=(e&&e.message)||''; toast(/reject|denied|declin|cancel/i.test(m)?'Connect cancelled':'Connect failed — '+m.slice(0,80),'err'); }
+      });
+    });
+    return true;
+  }
+  function closeWalletSheet(){ var s=$('walletSheet'); if(!s)return; s.classList.remove('on'); setTimeout(function(){ if(s.parentNode)s.remove(); },180); document.removeEventListener('keydown',walletSheetEsc); }
+  function walletSheetEsc(ev){ if(ev.key==='Escape')closeWalletSheet(); }
+  function swkReady(){ return !!(window.SWK&&window.SWK.StellarWalletsKit); }
+  async function connect(){
+    // Wait briefly for the (self-hosted) Kit module to finish loading before deciding — a slow
+    // load must not silently drop the user to the two-wallet fallback.
+    if(!swkReady()&&!window.SWK_FAILED){
+      var btn=$('connectBtn'); var restore=btn?btn.textContent:''; if(btn){ btn.textContent='Loading…'; btn.disabled=true; }
+      var t0=Date.now();
+      while(!swkReady()&&!window.SWK_FAILED&&Date.now()-t0<5000){ await new Promise(function(r){setTimeout(r,120);}); }
+      if(btn){ btn.textContent=restore||'Connect'; btn.disabled=false; }
     }
-    if(window.albedo&&window.albedo.publicKey){
-      try{
-        var res=await window.albedo.publicKey({});
-        if(res&&res.pubkey&&res.pubkey[0]==='G'){ setConnected(res.pubkey); toast('Wallet connected · '+trunc(res.pubkey)); return; }
-        throw new Error('no key returned');
-      }catch(e2){ toast('Connect cancelled','err'); return; }
-    }
-    toast('No Stellar wallet found — install Freighter (desktop) at freighter.app','err');
-    window.open('https://www.freighter.app/','_blank','noopener');
+    if(await connectWithChips()) return;   // wallet + network chips, built on the Kit
+    connectLegacySheet();               // fallback: built-in Freighter/Albedo picker
+  }
+  function connectLegacySheet(){
+    if($('walletSheet'))return;
+    var fr=freighterInstalled();
+    var scrim=document.createElement('div');
+    scrim.className='wsheet-scrim'; scrim.id='walletSheet';
+    scrim.innerHTML=
+      '<div class="wsheet" role="dialog" aria-modal="true" aria-label="Connect a Stellar wallet">'+
+        '<h3>Connect a wallet</h3>'+
+        '<p class="wsub">Choose how to connect. Connecting only shares your public Stellar address — it never moves funds. You approve every transaction inside your wallet.</p>'+
+        '<button class="wopt" id="wFreighter"'+(fr?'':' disabled')+'>'+
+          '<span class="wicon" style="background:#1c1c28">✦</span>'+
+          '<span class="wtx"><b>Freighter</b><span>Browser extension · desktop</span></span>'+
+          (fr?'<span class="wtag">Detected</span>':'<span class="wtag warn">Not installed</span>')+
+        '</button>'+
+        '<button class="wopt" id="wAlbedo">'+
+          '<span class="wicon" style="background:#5b3df5">A</span>'+
+          '<span class="wtx"><b>Albedo</b><span>Web wallet · works on mobile</span></span>'+
+          '<span class="wtag">Web</span>'+
+        '</button>'+
+        (fr?'':'<p class="wnote">No Freighter? Use Albedo above — it opens in a secure popup, nothing to install. Or get Freighter at freighter.app.</p>')+
+        '<button class="wcancel" id="wCancel">Cancel</button>'+
+      '</div>';
+    document.body.appendChild(scrim);
+    requestAnimationFrame(function(){ scrim.classList.add('on'); });
+    scrim.addEventListener('click',function(ev){ if(ev.target===scrim)closeWalletSheet(); });
+    document.addEventListener('keydown',walletSheetEsc);
+    $('wCancel').addEventListener('click',closeWalletSheet);
+    var wf=$('wFreighter'); if(wf&&fr) wf.addEventListener('click',function(){ closeWalletSheet(); connectFreighter(); });
+    else if(wf) wf.addEventListener('click',function(){ window.open('https://www.freighter.app/','_blank','noopener'); });
+    $('wAlbedo').addEventListener('click',function(){ closeWalletSheet(); connectAlbedo(); });
   }
   $('connectBtn').addEventListener('click',connect);
   (function(){ var prev=store('epn-wallet'); if(!prev)return;
+    var kind=store('epn-wallet-kind')||'freighter';
+    var label=store('epn-wallet-label')||walletLabel(kind);
+    // Kit-managed wallets: re-init the kit (once loaded) and restore the session.
+    function restoreViaKit(){
+      var k=getKit(); if(!k) return false;
+      try{ if(k.setWallet) k.setWallet(kind); }catch(e){}
+      k.getAddress().then(function(res){
+        var a=(res&&res.address)||res;
+        if(a&&a[0]==='G'){ window.STELLAR_VIA_KIT=true; setConnected(a,kind,label); }
+      }).catch(function(){ /* wallet no longer authorized — user can reconnect */ });
+      return true;
+    }
+    if(window.SWK){ if(restoreViaKit()) return; }
+    else { window.addEventListener('swk-ready',function(){ restoreViaKit(); }, {once:true}); }
+    // Legacy fallback paths (Kit unavailable):
+    if(kind==='albedo'){ setConnected(prev,'albedo'); return; }
     var tries=0,iv=setInterval(function(){ tries++;
+      if(window.STELLAR_PUBKEY){ clearInterval(iv); return; }
       var api=window.freighterApi;
       if(api&&api.getAddress){ clearInterval(iv);
-        api.getAddress().then(function(g){ var a=(g&&g.address)||g; if(a&&a[0]==='G')setConnected(a); }).catch(function(){});
+        api.getAddress().then(function(g){ var a=(g&&g.address)||g; if(a&&a[0]==='G'&&!window.STELLAR_PUBKEY)setConnected(a,'freighter'); }).catch(function(){});
       } else if(tries>20){ clearInterval(iv); }
     },250);
   })();
@@ -984,7 +1401,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   function amountRow(f){
     var I=INSTR[CUR];
     var amtCell = f.hideAmt ? '' : '<div><label class="lbl">'+esc(I.valueLabel||f.l||'Amount')+'</label><input class="input" id="f_amount" inputmode="decimal" placeholder="'+esc(f.ph||'550000')+'"></div>';
-    return '<div class="row">'+amtCell+'<div><label class="lbl">Base currency</label><select class="input" id="f_currency">'+ccyOpts('PHP')+'</select></div></div>';
+    return '<div class="row">'+amtCell+'<div><label class="lbl">Base currency *</label><select class="input" id="f_currency">'+ccyOpts('PHP')+'</select></div></div>';
   }
   function checksRow(f){
     return '<div><label class="lbl">'+esc(f.l)+'</label><div class="checks" id="f_'+f.k+'">'+
@@ -992,7 +1409,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   }
   function settleRow(f){
     // Settlement runs on Stellar, so the settlement asset is a Stellar asset.
-    return '<div class="row" id="settleWrap"><div><label class="lbl">Settlement currency</label><select class="input" id="f_settle_ccy"><option value="USDC" selected>USDC — Stellar USDC</option><option value="XLM">XLM — Stellar Lumen</option></select></div>'+
+    return '<div class="row" id="settleWrap"><div><label class="lbl">Settlement currency *</label><select class="input" id="f_settle_ccy"><option value="USDC" selected>USDC — Stellar USDC</option><option value="XLM">XLM — Stellar Lumen</option></select></div>'+
       '<div id="fxCell" style="display:none"><label class="lbl">Indicative FX rate</label><input class="input" id="f_fx_rate" inputmode="decimal" placeholder="e.g. 0.0180"></div></div>';
   }
   function renderForm(){
@@ -1028,6 +1445,65 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       '<div class="banner" style="margin:10px 0 0">Preview only — this entry issues <b>ePN</b>. The other five instruments are built and visible, but locked for now.</div>';
   }
   function num(id){ var el=$(id); return el?Number((el.value||'').replace(/[,\s]/g,'')):0; }
+  /* Repayment schedule (indicative, informational only — the on-chain escrow still settles as a
+     single release; this is the disclosed contractual cadence, not an enforced amortization). */
+  function monthsBetween(a,b){
+    try{ var d1=new Date(a+'T00:00:00'), d2=new Date(b+'T00:00:00');
+      if(isNaN(d1.getTime())||isNaN(d2.getTime())) return 0;
+      var m=(d2.getFullYear()-d1.getFullYear())*12+(d2.getMonth()-d1.getMonth());
+      if(d2.getDate()<d1.getDate()) m--;
+      return Math.max(0,m);
+    }catch(e){ return 0; }
+  }
+  function pnum(v){ return Number(String(v==null?'':v).replace(/[,\s]/g,''))||0; }
+  function termLabel(m){ return m>=12 ? (m/12).toFixed(m%12?2:0)+' yr' : m+' mo'; }
+  /* One source of truth for ePN money math.
+     Bullet (single payment at maturity) → SIMPLE interest for the full term: the principal stays
+     fully outstanding until the one settlement, so that's the correct base.
+     Installments → DECLINING BALANCE: each period's interest is simple interest on the principal
+     still outstanding for that period only, not an even split of the bullet total. Splitting a
+     flat total evenly overstates the effective rate on the outstanding balance once principal has
+     started paying down — RA 3765 s.4(7) requires the disclosed rate to be computed on the
+     outstanding unpaid balance, not the original principal, for every period after the first.
+     WHT applies to the INTEREST only (income), never to principal (return of capital). All figures
+     are indicative "if held to maturity" — interest accrues to the real settlement date. */
+  function epnEconomics(f, principal, ccy){
+    var ratePa=pnum(f&&f.interest_rate), whtp=pnum(f&&f.wht_rate);
+    var months=monthsBetween(f&&f.issue_date, f&&f.maturity_date), years=months/12;
+    var freq=(f&&f.repay_freq)||'Single payment at maturity';
+    var per={'Monthly':1,'Quarterly':3,'Semi-annual':6,'Annual':12}[freq];
+    var bullet=!per, n=bullet?1:Math.max(1,Math.round(months/per));
+    var principalEach=principal/n;
+    var interest, interestEach, interestFirst, interestLast;
+    if(bullet || !(principal>0) || !(ratePa>0)){
+      interest=(principal>0)?principal*(ratePa/100)*years:0;
+      interestEach=interest; interestFirst=interest; interestLast=interest;
+    } else {
+      var periodYears=per/12, outstanding=principal, total=0;
+      for(var i=0;i<n;i++){ total+=outstanding*(ratePa/100)*periodYears; outstanding-=principalEach; }
+      interest=total;
+      interestFirst=principal*(ratePa/100)*periodYears;
+      interestLast=(principal-principalEach*(n-1))*(ratePa/100)*periodYears;
+      interestEach=interest/n;   // average — display uses interestFirst/interestLast instead
+    }
+    var wht=interest*(whtp/100);
+    var totalDue=principal+interest, netToPayee=totalDue-wht;
+    return { ratePa:ratePa, whtp:whtp, months:months, years:years, interest:interest, wht:wht,
+      totalDue:totalDue, netToPayee:netToPayee, freq:freq, bullet:bullet, n:n,
+      principal:principal, ccy:ccy, principalEach:principalEach, interestEach:interestEach,
+      interestFirst:interestFirst, interestLast:interestLast, declining:!bullet };
+  }
+  function repaymentLine(f, principal, ccy){
+    var ec=epnEconomics(f, principal, ccy);
+    if(ec.bullet) return 'Single payment at maturity (bullet)';
+    var pay=ec.n+(ec.n===1?' payment':' payments');
+    if(ec.interest>0){
+      if(ec.n>1 && Math.abs(ec.interestFirst-ec.interestLast)>0.01)
+        return ec.freq+' · '+pay+' of '+ccy+' '+fmtAmt(ec.principalEach)+' principal + declining interest ('+ccy+' '+fmtAmt(ec.interestFirst)+' → '+ccy+' '+fmtAmt(ec.interestLast)+')';
+      return ec.freq+' · '+pay+' of '+ccy+' '+fmtAmt(ec.principalEach)+' principal + '+ccy+' '+fmtAmt(ec.interestEach)+' interest';
+    }
+    return ec.freq+' · '+pay+' of '+ccy+' '+fmtAmt(ec.principalEach)+' (principal)';
+  }
   function computeCalc(){
     var I=INSTR[CUR], ccy=$('f_currency')?$('f_currency').value:'PHP';
     var calc={ currency:ccy, rows:[] };
@@ -1039,9 +1515,23 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       calc.rows.push(['Subtotal',sub],['VAT ('+(num('f_vat_rate')||0)+'%)',vat],['Withholding ('+(num('f_wht_rate')||0)+'%)',-wht]);
       calc.grand=['Total payable',total];
     } else if(CUR==='ePN'){
-      calc.amount=amount; calc.big=amount;
-      var whtp=num('f_wht_rate');
-      if(whtp>0){ var w=amount*(whtp/100); calc.rows.push(['Principal',amount],['Withholding tax ('+whtp+'%)',-w]); calc.grand=['Net proceeds',amount-w]; }
+      calc.amount=amount; calc.big=amount;   // headline stays the principal (face value)
+      var pf={ interest_rate:($('f_interest_rate')||{}).value, wht_rate:($('f_wht_rate')||{}).value, issue_date:($('f_issue_date')||{}).value, maturity_date:($('f_maturity_date')||{}).value, repay_freq:($('f_repay_freq')||{}).value };
+      var ec=epnEconomics(pf, amount, ccy);
+      calc.repay = repaymentLine(pf, amount, ccy);
+      if(ec.interest>0){
+        calc.hasInterest=true;
+        calc.rows.push(['Principal',amount]);
+        calc.rows.push(['Interest ('+ec.ratePa+'% p.a.'+(ec.declining&&ec.n>1?', declining':' × '+termLabel(ec.months))+')', ec.interest]);
+        if(ec.wht>0){
+          calc.rows.push(['Total due at maturity', ec.totalDue]);
+          calc.rows.push(['Withholding tax on interest ('+ec.whtp+'%)', -ec.wht]);
+          calc.grand=['Net to payee', ec.netToPayee];
+        } else {
+          calc.grand=['Total due at maturity', ec.totalDue];
+        }
+      }
+      // Non-interest-bearing: no breakdown, and WHT is correctly ignored (no income to tax).
     } else {
       calc.amount=amount; calc.big=amount;
     }
@@ -1053,13 +1543,15 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   }
   function recompute(){
     var I=INSTR[CUR], calc=computeCalc(), box=$('issueSummary'), rows=[];
-    (calc.rows||[]).forEach(function(r){ rows.push('<div><span>'+esc(r[0])+'</span><span>'+calc.currency+' '+fmtAmt(Math.abs(r[1]))+(r[1]<0?' −':'')+'</span></div>'); });
+    (calc.rows||[]).forEach(function(r){ rows.push('<div><span>'+esc(r[0])+'</span><span>'+(r[1]<0?'− ':'')+calc.currency+' '+fmtAmt(Math.abs(r[1]))+'</span></div>'); });
     var grand = calc.grand ? '<div class="grand"><span>'+esc(calc.grand[0])+'</span><span>'+calc.currency+' '+fmtAmt(calc.grand[1])+'</span></div>' :
                 (calc.big? '<div class="grand"><span>Amount</span><span>'+calc.currency+' '+fmtAmt(calc.big)+'</span></div>':'');
+    var repay = calc.repay ? '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px"><span>Repayment</span><span>'+esc(calc.repay)+'</span></div>' : '';
     var fx = (calc.settle_ccy&&calc.settle_amount) ? '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px"><span>≈ Settlement in '+calc.settle_ccy+' @ '+calc.fx_rate+'</span><span>'+calc.settle_ccy+' '+fmtAmt(calc.settle_amount)+'</span></div>' :
              (calc.settle_ccy? '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px"><span>Settlement currency</span><span>'+calc.settle_ccy+' · enter indicative rate</span></div>':'');
-    if(!rows.length && !calc.grand && !calc.big && !fx){ box.style.display='none'; return; }
-    box.style.display='block'; box.innerHTML=rows.join('')+grand+fx;
+    var inote = calc.hasInterest ? '<div class="small" style="color:var(--muted);margin-top:8px;font-size:11px;line-height:1.4">Indicative — interest is computed to the stated maturity. It accrues to the actual settlement date; settling early reduces the interest proportionately.</div>' : '';
+    if(!rows.length && !calc.grand && !calc.big && !fx && !repay){ box.style.display='none'; return; }
+    box.style.display='block'; box.innerHTML=rows.join('')+grand+repay+fx+inote;
   }
 
   function issueErr(m){ var e=$('issueErr'); if(!m){e.style.display='none';return;} e.textContent=m; e.style.display='block'; }
@@ -1100,7 +1592,11 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
         state:'ISSUED', version:1,
         status:body.status||'registered', sandbox:body.sandbox!==false, issued:f.issue_date,
         signature:body.signature, signature_alg:body.signature_alg||'ML-DSA-65',
-        record_hash:body.record_hash, audit_id:body.audit_id, audit:[] };
+        record_hash:body.record_hash, audit_id:body.audit_id, audit:[],
+        // chain-of-control roles: the maker's wallet signs init and holds the
+        // fresh note; control reaches the payee (and any later holder) via
+        // the endorse → accept flow
+        maker_addr:window.STELLAR_PUBKEY||'', holder_addr:(window.STELLAR_PUBKEY||''), pending_addr:null };
       await addAudit(rec,'Issued & signed');
       var list=store('epn-notes')||[]; list.unshift(rec); store('epn-notes',list.slice(0,80));
       toast(CUR+' issued & signed');
@@ -1171,6 +1667,27 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
      ───────────────────────────────────────────────────────────────────────── */
   var current=null;
   function verifyUrl(id){ return location.origin+'/?id='+encodeURIComponent(id); }
+  /* Section header with a line-icon badge — one icon per section family,
+     matched by name so every instrument's sections get a sensible mark. */
+  function secIcon(h){
+    var k=String(h||'').toLowerCase();
+    var P='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">';
+    if(k.indexOf('part')>=0) return P+'<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+    if(k.indexOf('financ')>=0) return P+'<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>';
+    if(k.indexOf('condition')>=0) return P+'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>';
+    if(k.indexOf('chain')>=0||k.indexOf('control')>=0) return P+'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+    if(k.indexOf('registry')>=0) return P+'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>';
+    if(k.indexOf('cargo')>=0||k.indexOf('goods')>=0||k.indexOf('voyage')>=0||k.indexOf('shipment')>=0) return P+'<path d="M16.5 9.4L7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>';
+    if(k.indexOf('term')>=0) return P+'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+    return P+'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+  }
+  function secHead(h){ return '<div class="shead"><span class="sic">'+secIcon(h)+'</span><div class="sh">'+esc(h)+'</div></div>'; }
+  function hexA(hex,a){
+    var m=/^#?([0-9a-f]{6})$/i.exec(String(hex||'').trim());
+    if(!m) return 'rgba(245,197,24,'+a+')';
+    var n=parseInt(m[1],16);
+    return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';
+  }
   function fmtField(rec,r){
     var f=rec.fields||{};
     if(r.lit) return esc(r.lit);
@@ -1178,6 +1695,7 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     if(r.fmt==='date') return esc(fmtDate(v));
     if(r.fmt==='pct') return v?esc(v)+'%':(r.fb?esc(r.fb):'—');
     if(r.fmt==='tenor') return v?('At '+esc(v)+' days · matures '+esc(fmtDate(f.maturity_date))):'—';
+    if(r.fmt==='repayment') return esc(repaymentLine(f, Number(rec.amount)||0, rec.currency));
     return v?esc(v):(r.fb?esc(r.fb):'—');
   }
   function docBadgeClass(rec){ var st=INSTR[rec.type].states, i=st.indexOf(rec.state); return i>=st.length-1?'live':(i>=1?'mid':'mid'); }
@@ -1195,23 +1713,37 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     $('dCompany').textContent=issuerName;
     if(b.logo){ $('dLogo').innerHTML='<img alt="" src="'+b.logo+'">'; $('dLogo').style.background='#fff'; }
     else { $('dLogo').textContent=initials(issuerName); $('dLogo').style.background='linear-gradient(135deg,'+(b.color||I.accent)+','+(b.color?b.color+'cc':I.accent)+')'; }
-    $('dKick').textContent=I.name;
+    // ribbon + guilloche follow the Brand color; house yellow by default
+    var rcol=b.color||'#f5c518';
+    if($('docRibbon')) $('docRibbon').style.borderTopColor=rcol;
+    if($('docGuilloche')) $('docGuilloche').style.backgroundImage='repeating-linear-gradient(115deg,'+hexA(rcol,.35)+' 0 1px, transparent 1px 7px)';
+    // Eyebrow names the legal category (ETR); the title below names the
+    // specific instrument (I.name) — was previously the same string twice.
+    $('dKick').textContent='Electronic Transferable Records';
     $('dTitle').textContent=I.name.toUpperCase();
     $('dSub').textContent=I.code+' · Issued via ISET eTR';
     $('dLegal').textContent=I.legal;
     // amount — headline is the instrument's face value (principal for ePN, total
     // payable for eINV); any WHT deduction / net proceeds is shown in Financials.
     var big = (n.calc&&n.calc.big!=null)?n.calc.big:(n.amount);
-    if(I.code==='eBL' && !(n.amount>0)){ $('dAmount').style.display='none'; }
-    else { $('dAmount').style.display=''; $('dAmount').textContent=n.currency+' '+fmtAmt(big); }
+    if(I.code==='eBL' && !(n.amount>0)){ $('dAmount').style.display='none'; $('dAmountWords').style.display='none'; }
+    else {
+      $('dAmount').style.display=''; $('dAmount').textContent=n.currency+' '+fmtAmt2(big);
+      $('dAmountWords').style.display=''; $('dAmountWords').textContent=amountInWords(big, n.currency);
+    }
     // sections
     var html='';
     I.doc.forEach(function(sec){
-      html+='<div class="doc-sec"><div class="sh">'+esc(sec.h)+'</div>';
+      html+='<div class="doc-sec'+(sec.cols===2?' doc-2col':'')+'">'+secHead(sec.h);
       sec.rows.forEach(function(r){
         if(r.opt && !(f[r.f])) return;
         var tin = r.tin&&f[r.tin] ? '<small>TIN: '+esc(f[r.tin])+'</small>' : '';
-        html+='<div class="kv"><span class="k">'+esc(r.k)+'</span><span class="v">'+fmtField(n,r)+tin+'</span></div>';
+        var vhtml = fmtField(n,r);
+        // Fields marked wide:1 span the full grid row — Repayment can carry
+        // a long declining-interest range; squeezing it into a half column
+        // reads worse than the vertical space a full row costs.
+        var isWide = !!r.wide;
+        html+='<div class="kv'+(isWide?' kv-wide':'')+'"><span class="k">'+esc(r.k)+'</span><span class="v">'+vhtml+tin+'</span></div>';
       });
       if(sec.checks && f[sec.checks]){ var items=String(f[sec.checks]).split(', ').filter(Boolean);
         if(items.length) html+='<div style="margin-top:6px">'+(sec.checksLabel?'<div class="k" style="margin-bottom:4px">'+esc(sec.checksLabel)+'</div>':'')+'<div class="doc-checks">'+items.map(function(x){return '<span class="doc-chk">✓ '+esc(x)+'</span>';}).join('')+'</div></div>'; }
@@ -1219,20 +1751,93 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     });
     // financial breakdown (WHT / VAT / FX)
     if(n.calc && ((n.calc.rows&&n.calc.rows.length)||n.calc.settle_ccy)){
-      var fr='<div class="doc-sec"><div class="sh">Financials</div>';
-      (n.calc.rows||[]).forEach(function(r){ fr+='<div class="kv"><span class="k">'+esc(r[0])+'</span><span class="v">'+n.currency+' '+fmtAmt(Math.abs(r[1]))+(r[1]<0?' (less)':'')+'</span></div>'; });
-      if(n.calc.grand) fr+='<div class="kv"><span class="k">'+esc(n.calc.grand[0])+'</span><span class="v">'+n.currency+' '+fmtAmt(n.calc.grand[1])+'</span></div>';
+      var fr='<div class="doc-sec doc-2col">'+secHead('Financials');
+      (n.calc.rows||[]).forEach(function(r){ fr+='<div class="kv"><span class="k">'+esc(r[0])+'</span><span class="v">'+(r[1]<0?'− ':'')+n.currency+' '+fmtAmt(Math.abs(r[1]))+'</span></div>'; });
+      // Settlement before the grand total: in the 2-col grid this seats the
+      // grand (Net to payee) directly under the withholding-tax row.
       if(n.calc.settle_ccy) fr+='<div class="kv"><span class="k">Settlement currency</span><span class="v">'+esc(n.calc.settle_ccy)+(n.calc.settle_amount?' · ≈ '+fmtAmt(n.calc.settle_amount)+' @ '+esc(n.calc.fx_rate):'')+'</span></div>';
+      if(n.calc.grand) fr+='<div class="kv"><span class="k">'+esc(n.calc.grand[0])+'</span><span class="v">'+n.currency+' '+fmtAmt2(n.calc.grand[1])+'</span></div>';
+      if(n.calc.hasInterest) fr+='<div class="small" style="grid-column:1/-1;color:#6b7686;margin-top:8px;font-size:9px;line-height:1.4">Indicative — interest is computed to the stated maturity. It accrues to the actual settlement date; settling early reduces the interest proportionately.</div>';
       fr+='</div>'; html+=fr;
     }
+    // Terms & Conditions — MORB-pattern stipulations. Renewal / Collateral /
+    // Liquidated Damages come from the Issue form (empty = honest defaults);
+    // Computation of Yield and Pretermination are DERIVED from what the
+    // contract actually enforces (release_funds has no maturity gate →
+    // pretermination is allowed) — never user-editable, or the document
+    // could stipulate what the code contradicts.
+    if(I.code==='ePN'){
+      var tc='<div class="doc-sec doc-2col">'+secHead('Terms & Conditions');
+      if(f.stipulations){
+        // issuer-written stipulations — full width, verbatim
+        tc+='<div class="kv kv-wide"><span class="k">Stipulations</span><span class="v">'+esc(f.stipulations)+'</span></div>';
+        tc+='<div class="small" style="grid-column:1/-1;color:#6b7686;margin-top:8px;line-height:1.5">Stipulations are the parties’ own terms, disclosed on this record. Any security interest they create is perfected by the parties under RA 11057 (Personal Property Security Act) — this record discloses, it does not perfect.</div>';
+      } else if(f.renewal||f.collateral||f.liq_damages){
+        // legacy records issued while these were separate fields
+        tc+='<div class="kv"><span class="k">Renewal</span><span class="v">'+esc(f.renewal||'No automatic renewal')+'</span></div>';
+        tc+='<div class="kv"><span class="k">Collateral</span><span class="v">'+esc(f.collateral||'No collateral')+'</span></div>';
+        tc+='<div class="kv"><span class="k">Liquidated Damages</span><span class="v">'+esc(f.liq_damages||'None stipulated')+'</span></div>';
+        if(f.collateral) tc+='<div class="small" style="grid-column:1/-1;color:#6b7686;margin-top:8px;line-height:1.5">Collateral stipulated — creating and perfecting any security interest in it is the parties’ responsibility under RA 11057 (Personal Property Security Act). This record discloses the stipulation; it does not create the security interest.</div>';
+      } else {
+        // silence has a legal meaning — print it rather than leave a blank
+        tc+='<div class="kv kv-wide"><span class="k">Stipulations</span><span class="v">No further stipulations — no automatic renewal · no collateral · no liquidated damages</span></div>';
+      }
+      tc+='<div class="kv"><span class="k">Computation of Yield</span><span class="v">'+(n.calc&&n.calc.hasInterest?'Simple, non-compounded, on the stated principal':'Non-interest-bearing')+'</span></div>';
+      tc+='<div class="kv"><span class="k">Pretermination</span><span class="v">Allowed — reduces interest proportionately</span></div>';
+      tc+='</div>'; html+=tc;
+    }
+    // Chain of control — the face carries a one-line summary of current
+    // custody (bounded, never breaks the page budget); the full history is a
+    // click away on screen. On paper the toggle is replaced by a verify
+    // pointer, and an EXPANDED history prints as its own page — the
+    // Endorsement Schedule (Allonge), the classic slip attached to a paper
+    // note when its endorsements outgrow the instrument. WYSIWYG: collapsed
+    // on screen = one page printed; expanded = face + allonge.
+    if(I.onchain && (n.chain&&n.chain.length || n.pending_addr)){
+      var endorseN=(n.chain||[]).filter(function(c){ return /^Endorsed/.test(c.act||''); }).length;
+      var holderShort=trunc(n.holder_addr||(n.chain&&n.chain.length?n.chain[n.chain.length-1].addr:'')||'');
+      var sum = endorseN ? ('Endorsed '+endorseN+'× · currently held by <b class="mono">'+esc(holderShort)+'</b>')
+                         : ('Held by <b class="mono">'+esc(holderShort)+'</b>');
+      if(n.settle_tx) sum+=' · settled';
+      if(n.pending_addr) sum+=' · endorsement offered to <span class="mono">'+esc(trunc(n.pending_addr))+'</span>';
+      var ch='<div class="doc-sec">'+secHead('Chain of Control');
+      ch+='<div class="chain-sum"><span>'+sum+'</span>'+
+          '<button type="button" class="btn ghost sm no-print" id="chainHistBtn">Show full history</button></div>';
+      ch+='<div class="print-only">Full chain of control — verify via the QR below · Ref '+esc(n.id)+'</div>';
+      ch+='<div id="chainTimeline" hidden>';
+      ch+='<div class="allonge-head"><div class="ah-t">Endorsement Schedule (Allonge)</div>'+
+          '<div class="ah-s">'+esc(I.code)+' Ref '+esc(n.id)+' · as of <span id="allongeAsOf">—</span> · Printout of an electronic transferable record — the authoritative record is electronic; verify by reference or the QR on the face page.</div></div>';
+      (n.chain||[]).forEach(function(c){
+        ch+='<div class="kv"><span class="k">'+esc(c.act)+'</span><span class="v mono">'+esc(trunc(c.addr))+
+          (c.tx?' · tx '+esc(String(c.tx).slice(0,12))+'…':'')+'</span></div>';
+      });
+      if(n.pending_addr) ch+='<div class="kv"><span class="k">Endorsement offered to</span><span class="v mono">'+esc(trunc(n.pending_addr))+' · awaiting acceptance</span></div>';
+      ch+='<div class="small" style="color:#6b7686;margin-top:8px;line-height:1.5">Control is exclusive — one holder at a time, enforced by the settlement contract on Stellar. Each transfer above is an authorized on-chain transaction — the electronic equivalent of possession, which the Personal Property Security Act (RA 11057, §19) ranks above registration when perfecting a security interest in an instrument.</div>';
+      ch+='</div>';
+      ch+='</div>'; html+=ch;
+    }
     $('dSections').innerHTML=html;
+    // chain-history toggle (screen only — the button never prints)
+    var chb=$('chainHistBtn');
+    if(chb) chb.addEventListener('click',function(){
+      var t=$('chainTimeline'); if(!t) return;
+      var open=!t.hidden; t.hidden=open;
+      chb.textContent=open?'Show full history':'Hide full history';
+    });
+    stampAllonge();
+    // serial number — inline, before the status badge (the record's unique reference)
+    if($('dSerial')) $('dSerial').innerHTML='<b>S/N:</b> '+esc(n.id);
     // registry
     var holder=f.payee||f.beneficiary||f.consignee||f.buyer||f.depositor||issuerName;
+    if(n.accept_tx) holder+=' → endorsed';
+    var holderAddr=n.holder_addr||f.payee_addr||f.stellar_pubkey;
     $('dRef').textContent=n.id;
-    $('dHolder').textContent=holder+(f.stellar_pubkey?' · '+trunc(f.stellar_pubkey):'');
+    $('dHolder').textContent=holder+(holderAddr?' · '+trunc(holderAddr):'');
     $('dIssuer').textContent=issuerName;
     $('dStatus').textContent=(n.status||'registered')+(n.sandbox?' · sandbox':'');
-    $('dIssuedOn').textContent=fmtDate(f.issue_date);
+    // The user-entered issue_date is a date only; the first audit entry
+    // ('Issued & signed', always pushed first) carries the real timestamp.
+    $('dIssuedOn').textContent=(n.audit&&n.audit.length)?fmtStamp(n.audit[0].ts):fmtDate(f.issue_date);
     $('dAudit').textContent=n.audit_id||'—';
     // identity badge (honest wording)
     var issuerTin=f.maker_tin||f.drawer_tin||f.shipper_tin||f.applicant_tin||f.depositor_tin||f.seller_tin||'';
@@ -1250,6 +1855,11 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     renderDocAudit(n);
     show('note');
   }
+  /* Allonge "as of" stamp — refreshed right before printing so a paper
+     snapshot of the endorsement history is honest about when it was taken. */
+  function stampAllonge(){ var el=$('allongeAsOf'); if(el) el.textContent=fmtStamp(nowStamp()); }
+  window.addEventListener('beforeprint', stampAllonge);
+
   function renderDocAudit(rec){
     var a=rec.audit||[];
     $('docAudit').innerHTML = a.length? a.slice().reverse().map(function(e,idx){
@@ -1258,13 +1868,62 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     }).join('') : '<p class="muted" style="margin:0">No entries.</p>';
   }
 
+  /* Matured = the contract's maturity timestamp (the note's maturity_date at
+     00:00 UTC) is now in the past — mirrors the contract's own check so the
+     Claim-default button only appears when claim_default would actually clear
+     the NotMatured gate. To test the default path fast, set maturity to today
+     or an earlier date; a future date stays un-maturable until it arrives. */
+  function isMatured(rec){
+    var md=rec.fields&&rec.fields.maturity_date; if(!md) return false;
+    var t=new Date(md+'T00:00:00Z').getTime();
+    return isFinite(t) && Date.now()>t;
+  }
   /* ── State-machine actions (per instrument) ── */
   function renderStateActions(rec){
-    var I=INSTR[rec.type], st=I.states, i=st.indexOf(rec.state), box=$('stateActions'), h='';
-    // On-chain settle for ePN
+    var I=INSTR[rec.type], st=I.states, i=st.indexOf(rec.state), box=$('stateActions'), h='', hint='';
+    // On-chain lifecycle for ePN — actions follow WHO is connected:
+    // holder → endorse / settle · named endorsee → accept · anyone else → read-only.
+    // Terminal (Settled / Defaulted) freezes everything; the maker gets a
+    // Claim-default action once a note matures unsettled.
     if(I.onchain){
-      var settled = !!rec.settle_tx;
-      h+='<button class="btn" id="settleBtn"'+(settled?' disabled':'')+'>'+(settled?'Settled ✓':'Endorse & Settle on Stellar')+'</button>';
+      var settled=!!rec.settle_tx;
+      var defaulted=!!rec.default_tx;
+      var me=window.STELLAR_PUBKEY||'';
+      // legacy records (pre two-party) fall back to the wallet that registered them
+      var holder=rec.holder_addr||(rec.fields&&rec.fields.stellar_pubkey)||'';
+      var maker=rec.maker_addr||(rec.fields&&rec.fields.stellar_pubkey)||'';
+      var pending=rec.pending_addr||'';
+      var matured=isMatured(rec);
+      if(defaulted){
+        h+='<button class="btn" disabled>Defaulted ✓</button>';
+      } else if(settled){
+        h+='<button class="btn" disabled>Settled ✓</button>';
+      } else if(!me){
+        h+='<button class="btn" disabled title="Connect a wallet to act on this note">Connect wallet to act</button>';
+        if(holder) hint='Held by <span class="mono">'+esc(trunc(holder))+'</span>'+(pending?' · endorsement offered to <span class="mono">'+esc(trunc(pending))+'</span>':'');
+      } else if(CFG.endorse && pending && me===pending){
+        h+='<button class="btn" id="acceptBtn">Accept endorsement — take control</button>';
+        hint='Endorsement offered by the current holder <span class="mono">'+esc(trunc(holder))+'</span> — accepting makes this wallet the note’s exclusive holder.';
+      } else if(!holder || me===holder){
+        if(CFG.endorse) h+='<button class="btn ghost" id="endorseBtn">Endorse to…</button>';
+        h+='<button class="btn" id="settleBtn">Settle on Stellar</button>';
+        if(pending) hint='Endorsement offered to <span class="mono">'+esc(trunc(pending))+'</span> — awaiting their acceptance. Re-endorsing replaces the offer.';
+        else if(!CFG.endorse) hint='Endorsement runs on Testnet — the Mainnet contract upgrade is pending.';
+      } else {
+        h+='<button class="btn" disabled>Held by '+esc(trunc(holder))+'</button>';
+        hint='Only the holder’s wallet can endorse or settle this note'+(pending?' · endorsement pending acceptance by <span class="mono">'+esc(trunc(pending))+'</span>':'')+'. Connect the right wallet to act.';
+      }
+      // Claim default — MAKER-only, once matured, while still open. Independent
+      // of who holds it now: the maker can reclaim an unsettled, past-due note
+      // as Defaulted even after endorsing it away.
+      if(!settled && !defaulted && me && me===maker){
+        if(matured){
+          h+='<button class="btn ghost" id="claimDefaultBtn" title="Reclaim this matured, unsettled note as Defaulted">Claim default</button>';
+          if(!hint) hint='This note reached maturity unsettled — as the maker you may reclaim it on-chain as <b>Defaulted</b>.';
+        } else if(rec.fields&&rec.fields.maturity_date){
+          hint=(hint?hint+' · ':'')+'Claim default unlocks for the maker after maturity ('+esc(fmtDate(rec.fields.maturity_date))+').';
+        }
+      }
     } else if(i>=0 && i<st.length-1){
       h+='<button class="btn" id="advBtn">Advance → '+esc(st[i+1])+'</button>';
     } else {
@@ -1273,14 +1932,23 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     // Amendment — only when ISSUED
     var amendable = rec.state==='ISSUED';
     h+='<button class="btn ghost" id="amendBtn"'+(amendable?'':' disabled')+' title="'+(amendable?'Create a new version':'Only an ISSUED record can be amended')+'">Amend</button>';
+    if(hint) h+='<p class="small" style="flex-basis:100%;margin:6px 0 0;color:var(--muted)">'+hint+'</p>';
     box.innerHTML=h;
     if($('settleBtn')) $('settleBtn').addEventListener('click',onSettle);
+    if($('endorseBtn')) $('endorseBtn').addEventListener('click',function(){ showEndorsePanel(rec); });
+    if($('acceptBtn')) $('acceptBtn').addEventListener('click',function(){ onAccept(rec); });
+    if($('claimDefaultBtn')) $('claimDefaultBtn').addEventListener('click',function(){ onClaimDefault(rec); });
     if($('advBtn')) $('advBtn').addEventListener('click',function(){ advanceState(rec); });
     if($('amendBtn')&&amendable) $('amendBtn').addEventListener('click',function(){ amendRecord(rec); });
-    // chain status line reflects stored on-chain state
+    // chain status line reflects the LATEST on-chain action, not just the
+    // original registration — otherwise an endorsement/acceptance looked like
+    // it "reverted" the line back to "Registered on Stellar".
     if(I.onchain){
       if(rec.settle_tx) chainMsg('✓ <b>'+rec.type+' Settled on Stellar!</b> · '+txLink(rec.settle_tx,'View on Stellar Explorer'),'ok');
-      else if(rec.init_tx) chainMsg('✓ Registered on Stellar · '+txLink(rec.init_tx),'ok');
+      else if(rec.default_tx) chainMsg('⚠ <b>Defaulted on Stellar</b> — reclaimed by the maker after maturity · '+txLink(rec.default_tx,'View on Stellar Explorer'),'err');
+      else if(rec.pending_addr && rec.endorse_tx) chainMsg('✓ Endorsement offered to <span class="mono">'+esc(trunc(rec.pending_addr))+'</span> — awaiting acceptance · '+txLink(rec.endorse_tx,'View on Stellar Explorer'),'ok');
+      else if(rec.accept_tx) chainMsg('✓ <b>Endorsed on Stellar</b> — now held by <span class="mono">'+esc(trunc(rec.holder_addr))+'</span> · '+txLink(rec.accept_tx,'View on Stellar Explorer'),'ok');
+      else if(rec.init_tx) chainMsg('✓ Registered on Stellar · '+txLink(rec.init_tx,'View on Stellar Explorer'),'ok');
       else chainMsg('');
     } else { chainMsg('Off-chain settlement — advance the status to record the next audited state change.'); }
   }
@@ -1333,7 +2001,45 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
   async function invokeContract(fn,args,onStatus){
     var S=sdk(); if(!S) throw new Error('Stellar SDK still loading — try again in a few seconds');
     if(!window.STELLAR_PUBKEY) throw new Error('Connect your Stellar wallet first (top right)');
-    if(!(window.albedo&&window.albedo.tx)) throw new Error('Albedo wallet library unavailable');
+    var wkind=window.STELLAR_WALLET||'freighter';
+    var viaKit=!!(window.STELLAR_VIA_KIT&&getKit());
+    if(viaKit){
+      // App toggle is authoritative; the Kit signs for CFG.passphrase (passed at sign time). No network flipping.
+      // But block BEFORE signing if the wallet's own network differs — some wallets (Freighter) refuse
+      // and show their own dialog, but others (seen with HOT Wallet) sign silently for their own active
+      // network anyway, and the mismatch only surfaces as an opaque broadcast rejection afterward.
+      // Catching it here, by name, up front, avoids that.
+      try{
+        var kn=await kit.getNetwork();
+        var kPass=kn&&(kn.networkPassphrase||kn.network);
+        if(kPass&&kPass!==CFG.passphrase){
+          var kWantLabel=(NET==='mainnet')?'Mainnet':'Testnet';
+          var kHaveLabel=/Public Global Stellar/i.test(kPass)?'Main Net':(/Test SDF/i.test(kPass)?'Test Net':'a different network');
+          var kName=walletLabel(wkind, store('epn-wallet-label'));
+          var kme=new Error(kName+'’s own network is set to '+kHaveLabel+', but this app is set to '+kWantLabel+'.');
+          kme.code='NET_MISMATCH'; kme.want=kWantLabel; kme.have=kHaveLabel; kme.raw=(kn&&kn.network)||kPass; kme.walletName=kName;
+          throw kme;
+        }
+      }catch(ke){ if(ke&&ke.code==='NET_MISMATCH')throw ke; /* wallet has no exposed network (e.g. Albedo/xBull) — fine, proceed */ }
+    } else if(wkind==='albedo'){
+      if(!(window.albedo&&window.albedo.tx)) throw new Error('Albedo wallet unavailable — reconnect and try again');
+    } else {
+      if(!(window.freighterApi&&window.freighterApi.signTransaction)) throw new Error('Freighter unavailable — reconnect and try again');
+      if(window.freighterApi.getNetwork){
+        try{
+          var fnet=await window.freighterApi.getNetwork();
+          var fPass=(fnet&&(fnet.networkPassphrase||fnet.network))||'';
+          var fRaw=(fnet&&fnet.network)||fPass||'unknown';
+          if(fPass&&fPass!==CFG.passphrase){
+            var wantLabel=(NET==='mainnet')?'Mainnet':'Testnet';
+            var haveLabel=/Public Global Stellar/i.test(fPass)?'Main Net':(/Test SDF/i.test(fPass)?'Test Net':'a different network');
+            var nme=new Error('Freighter’s own network selector is set to '+haveLabel+' (raw: '+fRaw+'), but this app is set to '+wantLabel+'.');
+            nme.code='NET_MISMATCH'; nme.want=wantLabel; nme.have=haveLabel; nme.raw=fRaw;
+            throw nme;
+          }
+        }catch(ne){ if(ne&&ne.code==='NET_MISMATCH')throw ne; }
+      }
+    }
     var RpcNS=(S.rpc&&S.rpc.Server)?S.rpc:S.SorobanRpc;
     if(!RpcNS) throw new Error('This SDK build has no Soroban RPC');
     var server=new RpcNS.Server(RPC_URL);
@@ -1358,16 +2064,48 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
       var sm=(se&&se.message)||'';
       if(/#2\b|NotInitialized/i.test(sm)) throw new Error('The escrow has no registered note yet — issue an ePN first, then settle it.');
       if(/#3\b|NotActive/i.test(sm)) throw new Error('This note is already settled or defaulted — issue a new ePN to run the flow again.');
-      if(/#4\b|Unauthorized/i.test(sm)) throw new Error('This escrow was registered by a different wallet — issue a new note with this wallet, then settle.');
+      if(/#4\b|Unauthorized/i.test(sm)) throw new Error('❌ Rejected by the contract — this wallet no longer controls this note. Control is exclusive: once endorsed and accepted, the previous holder cannot endorse or settle it again.');
       if(/#5\b|NotMatured/i.test(sm)) throw new Error('The note has not reached maturity yet.');
+      if(/#6\b|NoPendingEndorsement/i.test(sm)) throw new Error('No endorsement offer is outstanding for this note — the holder must sign an endorsement first.');
       throw new Error('Simulation failed: '+sm.slice(0,140));
     }
-    onStatus&&onStatus('Waiting for wallet signature…');
-    var signed=await window.albedo.tx({ xdr: prepared.toXDR(), network:CFG.albedo });
-    if(!signed||!signed.signed_envelope_xdr) throw new Error('Signing cancelled');
+    onStatus&&onStatus('Waiting for '+(viaKit?walletLabel(wkind,(store('epn-wallet-label')||'your wallet')):(wkind==='albedo'?'Albedo':'Freighter'))+' signature…');
+    var signedXdr;
+    if(viaKit){
+      var kr;
+      try{ kr=await kit.signTransaction(prepared.toXDR(),{ address:window.STELLAR_PUBKEY, networkPassphrase:CFG.passphrase }); }
+      catch(ke){
+        var km=(ke&&(ke.message||ke))||'';
+        if(/reject|denied|declin|cancel/i.test(String(km))) throw new Error('Signing cancelled');
+        if(/network|passphrase|testnet|mainnet|public/i.test(String(km))){
+          var appNet=(NET==='mainnet')?'Main Net':'Test Net';
+          throw new Error('Your wallet rejected the signature — it’s likely on a different network. This app is on '+appNet+'; set your wallet to '+appNet+' too (or use the Testnet/Mainnet toggle at the top to match your wallet), then retry.');
+        }
+        throw new Error('Wallet signing failed — '+String(km).slice(0,90));
+      }
+      signedXdr=(typeof kr==='string')?kr:(kr&&(kr.signedTxXdr||kr.signedXDR||kr.signed_envelope_xdr));
+      if(!signedXdr) throw new Error('Signing cancelled');
+    } else if(wkind==='albedo'){
+      var signed=await window.albedo.tx({ xdr: prepared.toXDR(), network:CFG.albedo });
+      if(!signed||!signed.signed_envelope_xdr) throw new Error('Signing cancelled');
+      signedXdr=signed.signed_envelope_xdr;
+    } else {
+      var fr;
+      try{ fr=await window.freighterApi.signTransaction(prepared.toXDR(),{ networkPassphrase:CFG.passphrase, address:window.STELLAR_PUBKEY }); }
+      catch(fe){ var fm=(fe&&(fe.message||fe))||''; throw new Error(/reject|denied|declin|cancel/i.test(String(fm))?'Signing cancelled':'Freighter signing failed'); }
+      if(fr&&fr.error) throw new Error(/reject|denied|declin|cancel/i.test(String(fr.error.message||fr.error))?'Signing cancelled':'Freighter signing failed');
+      signedXdr=(typeof fr==='string')?fr:(fr&&(fr.signedTxXdr||fr.signedXDR||fr.signed_envelope_xdr));
+      if(!signedXdr) throw new Error('Signing cancelled');
+    }
     onStatus&&onStatus('Submitting to Stellar…');
-    var sent=await rpcCall('sendTransaction',{ transaction: signed.signed_envelope_xdr });
-    if(sent.status==='ERROR') throw new Error('Network rejected the transaction');
+    var sent=await rpcCall('sendTransaction',{ transaction: signedXdr });
+    if(sent.status==='ERROR'){
+      // The #1 cause here: the wallet signed for a different network than we submitted to — some
+      // wallets (unlike Freighter) don't refuse up front, they sign silently and only THIS step catches it.
+      var bre=new Error('Network rejected the transaction — most likely your wallet signed for a different network than this app is set to.');
+      bre.code='BROADCAST_REJECTED';
+      throw bre;
+    }
     var hash=sent.hash;
     for(var i=0;i<20;i++){
       await new Promise(function(r){setTimeout(r,1500);});
@@ -1380,11 +2118,21 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
 
   window.initEPNOnChain = async function(note,onStatus){
     var S=sdk(), me=window.STELLAR_PUBKEY;
+    // The maker's wallet holds the fresh note (signing = making; control =
+    // delivery). Control moves to the payee — and any later holder — through
+    // on-chain endorse → accept. Legacy records that named a holder at
+    // issuance keep it via note.holder_addr.
+    var holder=note.holder_addr||me;
+    // On-chain maturity must match the document's stated maturity date — an
+    // explorer-visible mismatch (this was hardcoded to +90 days regardless of
+    // the form) would undercut the "provably accurate" claim.
+    var mdate=note.fields&&note.fields.maturity_date;
+    var maturityTs = mdate ? Math.floor(new Date(mdate+'T00:00:00Z').getTime()/1000) : (Math.floor(Date.now()/1000)+7776000);
     var args=[
       S.Address.fromString(me).toScVal(),
-      S.Address.fromString(me).toScVal(),
+      S.Address.fromString(holder).toScVal(),
       S.nativeToScVal(BigInt(Math.round(note.amount)),{type:'i128'}),
-      S.nativeToScVal(BigInt(Math.floor(Date.now()/1000)+7776000),{type:'u64'}),
+      S.nativeToScVal(BigInt(maturityTs),{type:'u64'}),
       S.nativeToScVal(new Uint8Array(32),{type:'bytes'})
     ];
     return invokeContract('init',args,onStatus);
@@ -1393,6 +2141,53 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     var S=sdk(), me=window.STELLAR_PUBKEY;
     var args=[ S.Address.fromString(me).toScVal(), S.nativeToScVal(new Uint8Array(64),{type:'bytes'}) ];
     return invokeContract('release_funds',args,onStatus);
+  };
+  window.endorseEPNOnChain = async function(to,onStatus){
+    var S=sdk(), me=window.STELLAR_PUBKEY;
+    var args=[ S.Address.fromString(me).toScVal(), S.Address.fromString(to).toScVal() ];
+    return invokeContract('endorse',args,onStatus);
+  };
+  window.acceptEPNOnChain = async function(onStatus){
+    var S=sdk(), me=window.STELLAR_PUBKEY;
+    var args=[ S.Address.fromString(me).toScVal() ];
+    return invokeContract('accept',args,onStatus);
+  };
+  window.claimDefaultOnChain = async function(onStatus){
+    var S=sdk(), me=window.STELLAR_PUBKEY;
+    var args=[ S.Address.fromString(me).toScVal() ];
+    return invokeContract('claim_default',args,onStatus);
+  };
+
+  /* Read the escrow's current state straight off Stellar — no wallet, no
+     signing, no submit. Uses simulateTransaction (a read-only host call) so
+     ANYONE can verify who holds a note, not just the browser that issued it.
+     Returns {maker, lender, amount, maturity, status, pending} or throws.
+     NOTE: the demo contract holds ONE note at a time, so this reflects the
+     most-recently-initialized note — the caller fingerprints it against the
+     record being verified (maker+amount) before trusting it as "this note". */
+  function scEnumStr(v){ if(v==null)return null; if(typeof v==='string')return v; if(v.tag)return v.tag; if(Array.isArray(v))return String(v[0]); return String(v); }
+  window.readEpnOnChain = async function(){
+    var S=sdk(); if(!S) throw new Error('Stellar SDK still loading');
+    var RpcNS=(S.rpc&&S.rpc.Server)?S.rpc:S.SorobanRpc;
+    if(!RpcNS) throw new Error('This SDK build has no Soroban RPC');
+    var server=new RpcNS.Server(RPC_URL);
+    var src=new S.Account(S.Keypair.random().publicKey(),'0');   // throwaway source — simulate never checks it
+    var contract=new S.Contract(window.SOROBAN_CONTRACT_ID);
+    async function readFn(fn){
+      var tx=new S.TransactionBuilder(src,{fee:'100',networkPassphrase:CFG.passphrase})
+        .addOperation(contract.call(fn)).setTimeout(30).build();
+      var sim=await server.simulateTransaction(tx);
+      if(sim.error) throw new Error(String(sim.error).slice(0,120));
+      var rv=sim.result&&sim.result.retval;
+      if(!rv && sim.results&&sim.results[0]&&sim.results[0].xdr) rv=S.xdr.ScVal.fromXDR(sim.results[0].xdr,'base64');
+      return rv?S.scValToNative(rv):null;
+    }
+    var terms=await readFn('terms');       // {maker,lender,amount,maturity}
+    var status=await readFn('status');     // Active | Released | Defaulted
+    var pending=await readFn('pending');   // holder address, or null
+    return { maker:terms&&terms.maker, lender:terms&&terms.lender,
+      amount:terms?String(terms.amount):null, maturity:terms?Number(terms.maturity):null,
+      status:scEnumStr(status), pending:pending||null };
   };
 
   function fundingHelp(){
@@ -1410,16 +2205,81 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     if(cb) cb.addEventListener('click',function(){ navigator.clipboard.writeText(window.STELLAR_PUBKEY||'').then(function(){ toast('Address copied'); }); });
   }
 
+  async function checkWalletNetworkNow(){
+    var wkindNow=window.STELLAR_WALLET||'freighter';
+    var wname=walletLabel(wkindNow, store('epn-wallet-label'));
+    var viaKitNow=!!(window.STELLAR_VIA_KIT&&kit);
+    var getter = viaKitNow ? kit.getNetwork.bind(kit) : (window.freighterApi&&window.freighterApi.getNetwork);
+    if(!getter){ toast(wname+' network not detectable in this tab','err'); return; }
+    try{
+      var fnet=await getter();
+      var raw=(fnet&&fnet.network)||'unknown';
+      var pass=(fnet&&fnet.networkPassphrase)||'';
+      var label=/Public Global Stellar/i.test(pass)?'Main Net':(/Test SDF/i.test(pass)?'Test Net':raw);
+      var appLabel=(NET==='mainnet')?'Main Net':'Test Net';
+      var stillMismatched=(label==='Main Net'||label==='Test Net')&&label!==appLabel;
+      toast(wname+' right now: '+label+' (raw: '+raw+') — app is set to '+appLabel, stillMismatched?'err':undefined);
+    }catch(e){ toast('Could not read '+wname+'’s network — '+((e&&e.message)||'unknown error'),'err'); }
+  }
+
+  function showNetworkMismatchHelp(e){
+    var want=e.want||'the app’s network', have=e.have||'a different network';
+    var wname=e.walletName||walletLabel(window.STELLAR_WALLET,store('epn-wallet-label'));
+    // The network the wallet is actually on → what we'd switch the APP to, to match it.
+    var haveNet=(have==='Main Net')?'mainnet':(have==='Test Net')?'testnet':null;
+    var matchBtn = haveNet ?
+      ('<button type="button" class="btn sm" id="matchNetBtn" data-net="'+haveNet+'" style="margin:8px 6px 0 0">Switch this app to '+esc(have)+' (match '+esc(wname)+')</button>') : '';
+    chainMsg(
+      'On-chain step paused — <b>the app and your wallet are on different Stellar networks.</b><br>'+
+      '· '+esc(wname)+' is on <b>'+esc(have)+'</b> (raw: '+esc(e.raw||'')+')<br>'+
+      '· This app is on <b>'+esc(want)+'</b><br>'+
+      'Easiest fix — operate on the network your wallet is already using:'+
+      '<br>'+matchBtn+
+      '<button type="button" class="btn ghost sm" id="checkNetNow" style="margin:8px 0 0">Re-check '+esc(wname)+'’s network</button>'+
+      '<br><span class="small" style="color:var(--muted)">Or switch '+esc(wname)+' itself to '+esc(want)+' (its own network setting, usually near the account/network name), then Re-check.'+
+      (haveNet==='mainnet'?' Note: Main Net uses real XLM.':'')+'</span>',
+      'err'
+    );
+    var mb=$('matchNetBtn');
+    if(mb) mb.addEventListener('click',function(){ switchNet(mb.dataset.net); });
+    var cb=$('checkNetNow');
+    if(cb) cb.addEventListener('click',checkWalletNetworkNow);
+  }
+
+  /* Broadcast was rejected after signing — re-read the wallet's live network right now (the
+     signal wasn't available before signing, or the wallet doesn't refuse mismatches up front)
+     and show the same actionable panel if we can confirm a mismatch; otherwise a plain retry hint. */
+  async function showBroadcastRejectedHelp(){
+    var wname=walletLabel(window.STELLAR_WALLET,store('epn-wallet-label'));
+    var viaKitNow=!!(window.STELLAR_VIA_KIT&&kit);
+    var getter = viaKitNow ? kit.getNetwork.bind(kit) : (window.freighterApi&&window.freighterApi.getNetwork);
+    if(getter){
+      try{
+        var n=await getter();
+        var pass=n&&(n.networkPassphrase||n.network);
+        if(pass&&pass!==CFG.passphrase){
+          var wantLabel=(NET==='mainnet')?'Mainnet':'Testnet';
+          var haveLabel=/Public Global Stellar/i.test(pass)?'Main Net':(/Test SDF/i.test(pass)?'Test Net':'a different network');
+          return showNetworkMismatchHelp({ want:wantLabel, have:haveLabel, raw:(n&&n.network)||pass, walletName:wname });
+        }
+      }catch(e){ /* fall through to generic message */ }
+    }
+    chainMsg('On-chain registration skipped — Network rejected the transaction. This usually means '+esc(wname)+' signed for a different network than this app (currently <b>'+((NET==='mainnet')?'Mainnet':'Testnet')+'</b>). Reconnect '+esc(wname)+' and confirm its network before retrying — or try Albedo, which always signs for the network this app requests.','err');
+  }
+
   function anchorOnIssue(rec){
     if(!window.STELLAR_PUBKEY){ chainMsg('Connect your Stellar wallet to register this note on-chain.'); return; }
     chainMsg('Registering the note on Stellar…');
     window.initEPNOnChain(rec,chainMsg).then(async function(h){
-      rec.init_tx=h; rec.state='ENDORSED'; current=rec;
-      await addAudit(rec,'Endorsed on Stellar (init) · tx '+h.slice(0,12)); updateStoredNote(rec);
+      rec.init_tx=h; current=rec;   // stays ISSUED — ENDORSED is earned by an accepted endorsement
+      rec.chain=[{act:'Issued — control to',from:rec.maker_addr,addr:rec.holder_addr,tx:h}];
+      await addAudit(rec,'Registered on Stellar (init) · tx '+h.slice(0,12)); updateStoredNote(rec);
       chainMsg('✓ Registered on Stellar · '+txLink(h),'ok'); toast('Registered on Stellar');
       if(current&&current.id===rec.id){ renderStepper(rec); renderStateActions(rec); renderDocAudit(rec); }
     }).catch(function(e){
       if(e&&e.code==='NO_MAINNET_ACCOUNT') return showFundingHelp();
+      if(e&&e.code==='NET_MISMATCH') return showNetworkMismatchHelp(e);
+      if(e&&e.code==='BROADCAST_REJECTED') return showBroadcastRejectedHelp();
       chainMsg('On-chain registration skipped — '+esc(e.message||'error'),'err');
     });
   }
@@ -1429,14 +2289,90 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
     b.disabled=true; b.textContent='Submitting to Stellar...';
     try{
       var h=await window.settleEPNOnChain(chainMsg);
-      if(current){ current.settle_tx=h; current.state='SETTLED'; await addAudit(current,'Settled on Stellar (release_funds) · tx '+h.slice(0,12)); updateStoredNote(current); }
+      if(current){
+        current.settle_tx=h; current.state='SETTLED';
+        current.chain=(current.chain||[]).concat([{act:'Settled by holder',addr:window.STELLAR_PUBKEY||current.holder_addr,tx:h}]);
+        await addAudit(current,'Settled on Stellar (release_funds) · tx '+h.slice(0,12)); updateStoredNote(current);
+      }
       chainMsg('✓ <b>'+(current?current.type:'ePN')+' Settled on Stellar!</b> · '+txLink(h,'View on Stellar Explorer'),'ok');
       toast('Settled on Stellar');
       if(current){ renderStepper(current); renderStateActions(current); renderDocAudit(current); }
     }catch(e){
       if(e&&e.code==='NO_MAINNET_ACCOUNT') showFundingHelp();
+      else if(e&&e.code==='NET_MISMATCH') showNetworkMismatchHelp(e);
+      else if(e&&e.code==='BROADCAST_REJECTED') showBroadcastRejectedHelp();
       else chainMsg('Settlement failed — '+esc(e.message||'error'),'err');
       b.textContent=old; b.disabled=false;
+    }
+  }
+
+  /* ── Endorsement: offer (holder signs) → acceptance (endorsee signs) ──
+     Two distinct authorized acts, mirroring endorsement + delivery of a paper
+     note. Control is exclusive: once accepted, the previous holder can neither
+     settle nor endorse again — the contract rejects it, not just the UI. */
+  function handleChainErr(e,what){
+    if(e&&e.code==='NO_MAINNET_ACCOUNT') return showFundingHelp();
+    if(e&&e.code==='NET_MISMATCH') return showNetworkMismatchHelp(e);
+    if(e&&e.code==='BROADCAST_REJECTED') return showBroadcastRejectedHelp();
+    chainMsg(what+' failed — '+esc((e&&e.message)||'error'),'err');
+  }
+  function showEndorsePanel(rec){
+    if($('endorsePanel')) return;
+    var div=document.createElement('div');
+    div.id='endorsePanel';
+    div.style.cssText='flex-basis:100%;display:flex;gap:8px;flex-wrap:wrap;margin-top:8px';
+    div.innerHTML='<input class="input" id="endorseTo" placeholder="Endorsee Stellar address — G…" style="flex:1;min-width:220px" spellcheck="false">'+
+      '<button class="btn" id="endorseGo" style="flex:0 1 auto">Sign endorsement</button>';
+    $('stateActions').appendChild(div);
+    $('endorseGo').addEventListener('click',function(){ onEndorse(rec); });
+    $('endorseTo').focus();
+  }
+  async function onEndorse(rec){
+    var to=(($('endorseTo')||{}).value||'').trim();
+    if(!/^G[A-Z2-7]{55}$/.test(to)){ toast('Enter a valid Stellar address — G followed by 55 characters','err'); return; }
+    if(to===window.STELLAR_PUBKEY){ toast('That is the wallet already holding the note','err'); return; }
+    var b=$('endorseGo'); b.disabled=true; b.textContent='Signing…';
+    try{
+      var h=await window.endorseEPNOnChain(to,chainMsg);
+      rec.pending_addr=to; rec.endorse_tx=h;
+      await addAudit(rec,'Endorsement offered → '+trunc(to)+' (endorse) · tx '+h.slice(0,12));
+      chainMsg('✓ Endorsement signed — awaiting acceptance by '+esc(trunc(to))+' · '+txLink(h),'ok');
+      toast('Endorsement offered');
+      openNote(rec);
+    }catch(e){
+      handleChainErr(e,'Endorsement');
+      var b2=$('endorseGo'); if(b2){ b2.disabled=false; b2.textContent='Sign endorsement'; }
+    }
+  }
+  async function onAccept(rec){
+    var b=$('acceptBtn'); if(b){ b.disabled=true; b.textContent='Signing acceptance…'; }
+    try{
+      var h=await window.acceptEPNOnChain(chainMsg);
+      var prev=rec.holder_addr;
+      rec.holder_addr=window.STELLAR_PUBKEY; rec.pending_addr=null; rec.accept_tx=h; rec.state='ENDORSED';
+      rec.chain=(rec.chain||[]).concat([{act:'Endorsed — control to',from:prev,addr:window.STELLAR_PUBKEY,tx:h}]);
+      await addAudit(rec,'Endorsement accepted — holder is now '+trunc(window.STELLAR_PUBKEY)+' (accept) · tx '+h.slice(0,12));
+      chainMsg('✓ <b>Endorsement accepted on Stellar</b> — exclusive control transferred · '+txLink(h),'ok');
+      toast('Endorsement accepted — you hold this note');
+      openNote(rec);
+    }catch(e){
+      handleChainErr(e,'Acceptance');
+      if(b){ b.disabled=false; b.textContent='Accept endorsement — take control'; }
+    }
+  }
+  async function onClaimDefault(rec){
+    var b=$('claimDefaultBtn'); if(b){ b.disabled=true; b.textContent='Signing…'; }
+    try{
+      var h=await window.claimDefaultOnChain(chainMsg);
+      rec.default_tx=h; rec.state='DEFAULTED';
+      rec.chain=(rec.chain||[]).concat([{act:'Defaulted — reclaimed by maker after maturity',addr:rec.maker_addr,tx:h}]);
+      await addAudit(rec,'Defaulted on Stellar (claim_default) after maturity · tx '+h.slice(0,12));
+      chainMsg('⚠ <b>Defaulted on Stellar</b> — reclaimed by the maker after maturity · '+txLink(h,'View on Stellar Explorer'),'err');
+      toast('Note defaulted on Stellar');
+      openNote(rec);
+    }catch(e){
+      handleChainErr(e,'Default claim');
+      if(b){ b.disabled=false; b.textContent='Claim default'; }
     }
   }
 
@@ -1470,9 +2406,50 @@ dd{margin:0;font-size:13px;text-align:right;word-break:break-word}
           (rec.amount?'<dt>Amount</dt><dd>'+esc(rec.currency||'')+' '+fmtAmt(rec.amount)+'</dd>':'')+
           (rec.record_hash?'<dt>Record hash</dt><dd class="mono small">'+esc(rec.record_hash)+'</dd>':'')+
           '</dl></div>'+auditLine+
+          '<div id="vChain"></div>'+
           '<p class="note">Verified against the ISET registry of record. Anyone with this reference can repeat this check.</p>';
+        // Live on-chain control — who holds it NOW, read straight from Stellar
+        // (only for the on-chain instrument). Appends async so registry
+        // verification never waits on or regresses from the chain read.
+        var type=rec.instrument||(local?local.type:'');
+        if(/ePN|Promissory/i.test(type)||(local&&local.type==='ePN')) verifyOnChain(rec, local);
       })
       .catch(function(e){ out.innerHTML='<p class="err">Could not verify <span class="mono">'+esc(id)+'</span> — '+esc(e.message||'not found')+'.</p>'; });
+  }
+  function verifyOnChain(rec, local){
+    var box=$('vChain'); if(!box) return;
+    box.innerHTML='<p class="note" style="margin-top:10px">Reading live control state from Stellar…</p>';
+    var expl='https://stellar.expert/explorer/'+CFG.expert+'/contract/'+window.SOROBAN_CONTRACT_ID;
+    var link='<a class="link" href="'+expl+'" target="_blank" rel="noopener">contract on Stellar Explorer ↗</a>';
+    window.readEpnOnChain().then(function(oc){
+      var f=(rec&&rec.fields)||{};
+      // fingerprint: does the contract's current note match THIS record?
+      var refMaker=(local&&local.maker_addr)||f.stellar_pubkey||'';
+      var refAmt=String(Math.round(Number((local&&local.amount)||rec.amount||0)));
+      var canMatch=!!(refMaker&&oc.maker);
+      var isThis = canMatch && oc.maker===refMaker && oc.amount===refAmt;
+      var endorsed = oc.lender && oc.maker && oc.lender!==oc.maker;
+      if(canMatch && !isThis){
+        box.innerHTML='<div class="result" style="margin-top:10px"><div class="vbadges"><span class="vbadge">On-chain: different active note</span></div>'+
+          '<p class="note">This demo contract stores one note at a time, and a later issuance has since replaced this one on-chain. The registry issuance record above remains valid and signed — but live holder state for <em>this</em> note is no longer on the contract. '+link+'</p></div>';
+        return;
+      }
+      var holderLine = endorsed
+        ? '<dt>Current holder</dt><dd class="mono">'+esc(oc.lender)+'<small style="display:block;color:#6b7686;font-weight:500">endorsed — control moved from the maker</small></dd>'
+        : '<dt>Current holder</dt><dd class="mono">'+esc(oc.lender||'—')+'<small style="display:block;color:#6b7686;font-weight:500">original holder — not yet endorsed</small></dd>';
+      var pendLine = oc.pending ? '<dt>Pending endorsement</dt><dd class="mono">'+esc(oc.pending)+'<small style="display:block;color:#6b7686;font-weight:500">offered — awaiting the endorsee’s acceptance</small></dd>' : '';
+      var confBadge = isThis
+        ? '<span class="vbadge ok">✓ Matches this record</span>'
+        : '<span class="vbadge">Contract’s current active note</span>';
+      box.innerHTML='<div class="result" style="margin-top:10px">'+
+        '<div class="vbadges"><span class="vbadge ok">✓ Live from Stellar</span>'+confBadge+
+        '<span class="vbadge '+(oc.status==='Defaulted'?'bad':'ok')+'">'+esc(oc.status||'—')+'</span></div>'+
+        '<dl><dt>Maker</dt><dd class="mono">'+esc(oc.maker||'—')+'</dd>'+
+        holderLine+pendLine+
+        '</dl><p class="note">Control read live from the settlement contract — no wallet, no trust in this page required; anyone can repeat it. '+link+'</p></div>';
+    }).catch(function(e){
+      box.innerHTML='<p class="note" style="margin-top:10px">Live on-chain control state is momentarily unavailable ('+esc((e&&e.message)||'read failed')+'). The registry verification above stands on its own. '+link+'</p>';
+    });
   }
   $('vBtn').addEventListener('click',function(){ var id=$('vId').value.trim(); if(/^[A-Za-z0-9_-]{4,60}$/.test(id)) runVerify(id); else toast('Enter a valid record reference','err'); });
   $('vId').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); $('vBtn').click(); } });
