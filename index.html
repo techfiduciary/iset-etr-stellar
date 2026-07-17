@@ -884,7 +884,7 @@ main{display:block;margin-top:18px}
       ],
       doc:[
         {h:'Parties',cols:2,rows:[{k:'Maker (Promisor)',f:'maker',tin:'maker_tin'},{k:'Pay to the order of:',f:'payee',tin:'payee_tin'}]},
-        {h:'Terms',cols:2,rows:[{k:'Interest rate (p.a.)',f:'interest_rate',fmt:'pct',fb:'Non-interest-bearing'},{k:'Withholding tax',f:'wht_rate',fmt:'pct',opt:1},{k:'Place of issue',f:'place'},{k:'Purpose',f:'purpose'},{k:'Maturity date',f:'maturity_date',fmt:'date'},{k:'Repayment',f:'repay_freq',fmt:'repayment'},{k:'Remarks',f:'remarks',opt:1}]}
+        {h:'Terms',cols:2,rows:[{k:'Interest rate (p.a.)',f:'interest_rate',fmt:'pct',fb:'Non-interest-bearing'},{k:'Withholding tax',f:'wht_rate',fmt:'pct',opt:1},{k:'Place of issue',f:'place'},{k:'Purpose',f:'purpose'},{k:'Maturity date',f:'maturity_date',fmt:'date'},{k:'Remarks',f:'remarks',opt:1},{k:'Repayment',f:'repay_freq',fmt:'repayment',wide:1}]}
       ]
     },
     eBE:{
@@ -1699,10 +1699,10 @@ main{display:block;margin-top:18px}
         if(r.opt && !(f[r.f])) return;
         var tin = r.tin&&f[r.tin] ? '<small>TIN: '+esc(f[r.tin])+'</small>' : '';
         var vhtml = fmtField(n,r);
-        // Remarks stays full-width even inside a 2-col section — free text
-        // runs long enough that squeezing it into a half column reads worse
-        // than the small amount of vertical space it costs.
-        var isWide = /^remarks$/.test(String(r.f||''));
+        // Fields marked wide:1 span the full grid row — Repayment can carry
+        // a long declining-interest range; squeezing it into a half column
+        // reads worse than the vertical space a full row costs.
+        var isWide = !!r.wide;
         html+='<div class="kv'+(isWide?' kv-wide':'')+'"><span class="k">'+esc(r.k)+'</span><span class="v">'+vhtml+tin+'</span></div>';
       });
       if(sec.checks && f[sec.checks]){ var items=String(f[sec.checks]).split(', ').filter(Boolean);
