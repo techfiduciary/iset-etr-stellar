@@ -18,12 +18,12 @@
 <html lang="en" data-theme="dark"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>eTransferable Records · by ISET on Stellar</title>
-<meta name="description" content="Issue, hold, and verify the six electronic transferable records — post-quantum signed, independently verifiable, settling in Stellar USDC.">
+<meta name="description" content="Issue, hold, and verify the six electronic transferable records — post-quantum signed, independently verifiable, settled on the Stellar network.">
 <meta name="theme-color" content="#0b1f3a">
 <link rel="icon" type="image/png" href="/assets/eTR.png">
 <link rel="apple-touch-icon" href="/assets/eTR.png">
 <meta property="og:title" content="eTransferable Records · by ISET on Stellar">
-<meta property="og:description" content="Six post-quantum-signed trade instruments, settling in Stellar USDC.">
+<meta property="og:description" content="Six post-quantum-signed trade instruments, settled on the Stellar network.">
 <meta property="og:image" content="/assets/eTR.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/4.1.0/index.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@albedo-link/intent@0.12.0/lib/albedo.intent.js" defer></script>
@@ -429,6 +429,11 @@ main{display:block;margin-top:18px}
   .doc-sub{font-size:9px}
   .doc-legal{font-size:10px;margin:6px auto 2px;line-height:1.4;max-width:70ch}
   .doc-amt{font-size:23px;margin:4px 0 0}
+  /* Printers dither semi-transparent borders into faint gray — print gets
+     SOLID border colors (no alpha) so every box edge survives on paper. */
+  .doc,.doc-sec,.fchip,.qrbox,.sic{border-color:#4a5563}
+  .doc-head,.doc-foot,.doc-sig{border-color:#4a5563}
+  .kv{border-bottom-color:#8a94a0}
   .doc-sec{margin-top:8px;border-width:1.25px;padding:5px 8px}
   .doc-sec .sh{font-size:8.5px;margin-bottom:1px}
   .shead{margin-bottom:2px;gap:6px}
@@ -651,7 +656,7 @@ main{display:block;margin-top:18px}
           <div class="foot-chips">
             <span class="fchip">
               <span class="fic ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-              <span class="ft"><b id="dIdName">Issuer verified via ISET registry</b><i id="dIdSub">TIN on file · personal data stays off-chain</i></span>
+              <span class="ft"><b id="dIdName">Issuer: TIN on file</b><i id="dIdSub">personal data stays off-chain</i></span>
             </span>
             <span class="fchip">
               <span class="fic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
@@ -766,7 +771,7 @@ main{display:block;margin-top:18px}
 
   <footer class="foot">
     <div class="footlinks"><button data-go="brand">Brand</button> · <button data-go="verify">Verify</button></div>
-    Issued &amp; signed by ISET · post-quantum signatures (ML-DSA-65) · settling in Stellar USDC.
+    Signed &amp; registered via ISET · post-quantum signatures (ML-DSA-65) · settled on the Stellar network.
     <div style="margin-top:6px;opacity:.5">© 2026 ISET. All rights reserved.</div>
   </footer>
 </div>
@@ -1813,9 +1818,11 @@ main{display:block;margin-top:18px}
     $('dIssuedOn').textContent=(n.audit&&n.audit.length)?fmtStamp(n.audit[0].ts):fmtDate(f.issue_date);
     $('dAudit').textContent=n.audit_id||'—';
     // identity badge (honest wording)
+    // "TIN on file" — disclosed, not "verified": the TIN is free text the
+    // issuer typed; no BIR check runs. The number itself prints in Parties.
     var issuerTin=f.maker_tin||f.drawer_tin||f.shipper_tin||f.applicant_tin||f.depositor_tin||f.seller_tin||'';
-    $('dIdName').textContent = issuerTin ? 'Issuer verified via ISET registry' : 'Issuer registered via ISET';
-    $('dIdSub').textContent = issuerTin ? ('TIN '+issuerTin+' on file · personal data stays off-chain') : 'No TIN on file · add one in Brand for a verified badge';
+    $('dIdName').textContent = issuerTin ? 'Issuer: TIN on file' : 'Issuer: registered';
+    $('dIdSub').textContent = issuerTin ? 'personal data stays off-chain' : 'no TIN on file';
     // Footer settlement label follows the chosen Stellar settlement asset.
     $('dSettleCcy').textContent = (f.settle_ccy==='XLM') ? 'Stellar Lumen' : 'Stellar USDC';
     $('dVerifyBtn').href=verifyUrl(n.id); $('openVerifyBtn').href=verifyUrl(n.id);
