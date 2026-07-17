@@ -262,12 +262,12 @@ main{display:block;margin-top:18px}
 .chk input{accent-color:var(--accent);width:15px;height:15px}
 
 /* ── The note document (white paper, both themes) ── */
-.doc{position:relative;background:#fff;color:#13202e;border:1px solid rgba(20,25,31,.12);border-radius:14px;overflow:hidden;box-shadow:0 18px 50px rgba(5,15,35,.35);margin:14px 0}
+.doc{position:relative;background:#fff;color:#13202e;border:1.5px solid rgba(20,25,31,.28);border-radius:14px;overflow:hidden;box-shadow:0 18px 50px rgba(5,15,35,.35);margin:14px 0}
 /* Ribbon + engraved guilloche strip — the accent color follows the Brand
    color (Brand tab) and falls back to the house yellow. */
 .doc-ribbon{border-top:4px solid #f5c518}   /* border, not background — borders survive default print settings */
 .doc-guilloche{height:8px;opacity:.55;background-image:repeating-linear-gradient(115deg, rgba(245,197,24,.35) 0 1px, transparent 1px 7px)}
-.doc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid rgba(20,25,31,.12)}
+.doc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1.5px solid rgba(20,25,31,.28)}
 .doc-head .co{display:flex;align-items:center;gap:10px;min-width:0}
 .doc-head .colo{width:38px;height:38px;border-radius:9px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none}
 .doc-head .con{font-size:16px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -298,7 +298,7 @@ main{display:block;margin-top:18px}
 .shead .sh{margin:0}
 .sic{width:22px;height:22px;border-radius:6px;background:#fff;border:1px solid rgba(20,25,31,.12);color:#2456c8;display:flex;align-items:center;justify-content:center;flex:none}
 .sic svg{width:12px;height:12px}
-.kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px dotted rgba(20,25,31,.09)}
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px dotted rgba(20,25,31,.22)}
 .kv:last-child{border-bottom:none}
 .kv .k{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#6b7686;flex:none}
 .kv .v{font-size:13.5px;font-weight:700;text-align:right;word-break:break-word}
@@ -320,20 +320,24 @@ main{display:block;margin-top:18px}
 .doc-sec.doc-2col .kv-wide{grid-column:1/-1}
 .doc-checks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .doc-chk{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:#1f7a33;background:rgba(31,122,51,.09);border:1px solid rgba(31,122,51,.3);border-radius:6px;padding:4px 9px}
-.doc-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid rgba(20,25,31,.12);background:#fbfcfe}
+.doc-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 18px;border-top:1.5px solid rgba(20,25,31,.28);background:#fbfcfe}
 .doc-foot .lft{display:flex;align-items:center;gap:12px}
 /* One trust strip: identity, registration, settlement — equal-weight chips
    on the same line as the QR + Verify. */
 .foot-chips{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-.fchip{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid rgba(20,25,31,.12);border-radius:999px;padding:5px 11px}
-.fchip .fic{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#2456c8;background:#f2f5fa;flex:none}
+.fchip{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1.5px solid rgba(20,25,31,.3);border-radius:999px;padding:6px 12px}
+.fchip .fic{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#2456c8;background:#f2f5fa;flex:none}
 .fchip .fic.ok{color:#1f7a33;background:rgba(31,122,51,.1)}
-.fchip .fic img{width:13px;height:13px;object-fit:contain}
+.fchip .fic img{width:16px;height:16px;object-fit:contain}
 .fchip .ft b{display:block;font-size:10.5px;color:#13202e;line-height:1.25}
 .fchip .ft i{display:block;font-style:normal;font-size:9px;color:#6b7686;line-height:1.25}
-.qrbox{width:60px;height:60px;border:1px solid rgba(20,25,31,.12);border-radius:8px;background:#fff;padding:4px;flex:none}
+.qrbox{width:60px;height:60px;border:1.5px solid rgba(20,25,31,.3);border-radius:8px;background:#fff;padding:4px;flex:none}
 .qrbox svg{width:100%;height:100%;display:block}
-.verify-btn{background:#f5c518;color:#1a1503;font-family:ui-monospace,monospace;font-weight:700;font-size:11.5px;letter-spacing:.07em;padding:10px 18px;border-radius:8px;display:inline-block;text-decoration:none}
+/* Border-defined, not fill-dependent: many print dialogs default to
+   "background graphics" off, which would drop the yellow fill and leave an
+   invisible button if the shape relied on it. The dark border always shows;
+   the dark text (#1a1503) already reads on bare white paper either way. */
+.verify-btn{background:#f5c518;color:#1a1503;border:1.5px solid #1a1503;font-family:ui-monospace,monospace;font-weight:700;font-size:11.5px;letter-spacing:.07em;padding:10px 18px;border-radius:8px;display:inline-block;text-decoration:none}
 .badges2{display:flex;flex-direction:column;gap:8px}
 .badge2{display:flex;align-items:center;gap:8px}
 .badge2 .bic{width:24px;height:24px;flex:none;display:flex;align-items:center;justify-content:center}
@@ -344,7 +348,7 @@ main{display:block;margin-top:18px}
 .doc-id .di{width:26px;height:26px;border-radius:7px;background:rgba(31,122,51,.1);color:#1f7a33;display:flex;align-items:center;justify-content:center;flex:0 0 26px}
 .doc-id b{font-size:11.5px;display:block;color:#13202e}
 .doc-id span{font-size:10.5px;color:#6b7686}
-.doc-sig{padding:10px 18px 14px;background:#fbfcfe;border-top:1px solid rgba(20,25,31,.12)}
+.doc-sig{padding:10px 18px 14px;background:#fbfcfe;border-top:1.5px solid rgba(20,25,31,.28)}
 .doc-sig .line{text-align:center;font-family:ui-monospace,monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:#6b7686;margin-bottom:6px}
 .doc-sig .sig{font-family:ui-monospace,monospace;font-size:9px;color:#6b7686;word-break:break-all;line-height:1.6}
 .doc-sig .sig b{color:#33414f;font-weight:600}
@@ -434,7 +438,10 @@ main{display:block;margin-top:18px}
   .kv{padding:2px 0}
   .doc-ribbon{border-top-width:3px}
   .doc-guilloche{height:6px}
-  .fchip{padding:3px 8px}
+  .fchip{padding:3px 9px}
+  .fchip .fic{width:20px;height:20px}
+  .fchip .fic svg{width:11px!important;height:11px!important}
+  .fchip .fic img{width:13px;height:13px}
   .fchip .ft b{font-size:9.5px}
   .fchip .ft i{font-size:8px}
   .kv .v{font-size:12px}
@@ -637,23 +644,23 @@ main{display:block;margin-top:18px}
           </div>
         </div>
         <div class="doc-foot">
+          <div class="lft">
+            <div class="qrbox" id="qrBox" aria-label="Verification QR"></div>
+            <a class="verify-btn" id="dVerifyBtn" href="#">VERIFY</a>
+          </div>
           <div class="foot-chips">
             <span class="fchip">
-              <span class="fic ok"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+              <span class="fic ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
               <span class="ft"><b id="dIdName">Issuer verified via ISET registry</b><i id="dIdSub">TIN on file · personal data stays off-chain</i></span>
             </span>
             <span class="fchip">
-              <span class="fic"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
+              <span class="fic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
               <span class="ft"><b>Registered: ISET eTR</b><i>Post-quantum signed · MLETR aligned</i></span>
             </span>
             <span class="fchip">
               <span class="fic"><img src="/assets/stellar.png" alt="Stellar"></span>
               <span class="ft"><b>Settlement</b><i id="dSettleCcy">Stellar USDC</i></span>
             </span>
-          </div>
-          <div class="lft">
-            <div class="qrbox" id="qrBox" aria-label="Verification QR"></div>
-            <a class="verify-btn" id="dVerifyBtn" href="#">VERIFY</a>
           </div>
         </div>
         <div class="doc-sig">
@@ -1683,7 +1690,9 @@ main{display:block;margin-top:18px}
     var rcol=b.color||'#f5c518';
     if($('docRibbon')) $('docRibbon').style.borderTopColor=rcol;
     if($('docGuilloche')) $('docGuilloche').style.backgroundImage='repeating-linear-gradient(115deg,'+hexA(rcol,.35)+' 0 1px, transparent 1px 7px)';
-    $('dKick').textContent=I.name;
+    // Eyebrow names the legal category (ETR); the title below names the
+    // specific instrument (I.name) — was previously the same string twice.
+    $('dKick').textContent='Electronic Transferable Records';
     $('dTitle').textContent=I.name.toUpperCase();
     $('dSub').textContent=I.code+' · Issued via ISET eTR';
     $('dLegal').textContent=I.legal;
