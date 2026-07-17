@@ -393,6 +393,28 @@ main{display:block;margin-top:18px}
   html[data-theme="light"] .tabs{background:rgba(170,185,248,.13);border-color:rgba(4,32,151,.18)}
   html[data-theme="light"] .tabs button{color:#042097;text-shadow:none}
   html[data-theme="light"] .tabs button.on{color:#042097;background:#c9d9eb;text-shadow:none}
+
+  /* ── Instrument document on phones ──────────────────────────────────────
+     Every 2-column section (Parties/Terms/Financials/T&C) and the Registry
+     column-stack collapse to a SINGLE column — at 375px each half was only
+     ~125px, cramming label into value. display:block is the robust collapse:
+     the section's .shead / .kv / .kv-wide children just stack. */
+  .doc-sec.doc-2col, .doc-sec.doc-cols{display:block}
+  .doc-body{padding:14px 14px 0}
+  .doc-head{padding:11px 14px}
+  .doc-amt{font-size:27px}
+  .doc-legal{font-size:11px;max-width:none}
+  /* Each row keeps label left / value right, but long values (mono addresses,
+     hashes, long free text) wrap instead of forcing the card wider. */
+  .doc .kv{gap:10px}
+  .doc .kv .v, .doc .kv .v.mono{overflow-wrap:anywhere;word-break:break-word}
+  /* Footer: QR + Verify on their own row, the three trust chips stacked
+     full-width beneath — no cramped wrap. */
+  .doc-foot{flex-direction:column;align-items:stretch;gap:10px;padding:12px 14px}
+  .doc-foot .lft{justify-content:flex-start;gap:12px}
+  .foot-chips{flex-direction:column;align-items:stretch;gap:7px}
+  .fchip{width:100%}
+  .doc-sig{padding:10px 14px 14px}
 }
 /* ── Tablet + desktop: header nav, glass on scroll ── */
 @media (min-width:601px){
