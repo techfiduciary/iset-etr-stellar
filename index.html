@@ -1868,18 +1868,35 @@ main{display:block;margin-top:18px}
     }).join('') : '<p class="muted" style="margin:0">No entries.</p>';
   }
 
+  /* Matured = the contract's maturity timestamp (the note's maturity_date at
+     00:00 UTC) is now in the past — mirrors the contract's own check so the
+     Claim-default button only appears when claim_default would actually clear
+     the NotMatured gate. To test the default path fast, set maturity to today
+     or an earlier date; a future date stays un-maturable until it arrives. */
+  function isMatured(rec){
+    var md=rec.fields&&rec.fields.maturity_date; if(!md) return false;
+    var t=new Date(md+'T00:00:00Z').getTime();
+    return isFinite(t) && Date.now()>t;
+  }
   /* ── State-machine actions (per instrument) ── */
   function renderStateActions(rec){
     var I=INSTR[rec.type], st=I.states, i=st.indexOf(rec.state), box=$('stateActions'), h='', hint='';
     // On-chain lifecycle for ePN — actions follow WHO is connected:
-    // holder → endorse / settle · named endorsee → accept · anyone else → read-only
+    // holder → endorse / settle · named endorsee → accept · anyone else → read-only.
+    // Terminal (Settled / Defaulted) freezes everything; the maker gets a
+    // Claim-default action once a note matures unsettled.
     if(I.onchain){
       var settled=!!rec.settle_tx;
+      var defaulted=!!rec.default_tx;
       var me=window.STELLAR_PUBKEY||'';
       // legacy records (pre two-party) fall back to the wallet that registered them
       var holder=rec.holder_addr||(rec.fields&&rec.fields.stellar_pubkey)||'';
+      var maker=rec.maker_addr||(rec.fields&&rec.fields.stellar_pubkey)||'';
       var pending=rec.pending_addr||'';
-      if(settled){
+      var matured=isMatured(rec);
+      if(defaulted){
+        h+='<button class="btn" disabled>Defaulted ✓</button>';
+      } else if(settled){
         h+='<button class="btn" disabled>Settled ✓</button>';
       } else if(!me){
         h+='<button class="btn" disabled title="Connect a wallet to act on this note">Connect wallet to act</button>';
@@ -1896,6 +1913,17 @@ main{display:block;margin-top:18px}
         h+='<button class="btn" disabled>Held by '+esc(trunc(holder))+'</button>';
         hint='Only the holder’s wallet can endorse or settle this note'+(pending?' · endorsement pending acceptance by <span class="mono">'+esc(trunc(pending))+'</span>':'')+'. Connect the right wallet to act.';
       }
+      // Claim default — MAKER-only, once matured, while still open. Independent
+      // of who holds it now: the maker can reclaim an unsettled, past-due note
+      // as Defaulted even after endorsing it away.
+      if(!settled && !defaulted && me && me===maker){
+        if(matured){
+          h+='<button class="btn ghost" id="claimDefaultBtn" title="Reclaim this matured, unsettled note as Defaulted">Claim default</button>';
+          if(!hint) hint='This note reached maturity unsettled — as the maker you may reclaim it on-chain as <b>Defaulted</b>.';
+        } else if(rec.fields&&rec.fields.maturity_date){
+          hint=(hint?hint+' · ':'')+'Claim default unlocks for the maker after maturity ('+esc(fmtDate(rec.fields.maturity_date))+').';
+        }
+      }
     } else if(i>=0 && i<st.length-1){
       h+='<button class="btn" id="advBtn">Advance → '+esc(st[i+1])+'</button>';
     } else {
@@ -1909,6 +1937,7 @@ main{display:block;margin-top:18px}
     if($('settleBtn')) $('settleBtn').addEventListener('click',onSettle);
     if($('endorseBtn')) $('endorseBtn').addEventListener('click',function(){ showEndorsePanel(rec); });
     if($('acceptBtn')) $('acceptBtn').addEventListener('click',function(){ onAccept(rec); });
+    if($('claimDefaultBtn')) $('claimDefaultBtn').addEventListener('click',function(){ onClaimDefault(rec); });
     if($('advBtn')) $('advBtn').addEventListener('click',function(){ advanceState(rec); });
     if($('amendBtn')&&amendable) $('amendBtn').addEventListener('click',function(){ amendRecord(rec); });
     // chain status line reflects the LATEST on-chain action, not just the
@@ -1916,6 +1945,7 @@ main{display:block;margin-top:18px}
     // it "reverted" the line back to "Registered on Stellar".
     if(I.onchain){
       if(rec.settle_tx) chainMsg('✓ <b>'+rec.type+' Settled on Stellar!</b> · '+txLink(rec.settle_tx,'View on Stellar Explorer'),'ok');
+      else if(rec.default_tx) chainMsg('⚠ <b>Defaulted on Stellar</b> — reclaimed by the maker after maturity · '+txLink(rec.default_tx,'View on Stellar Explorer'),'err');
       else if(rec.pending_addr && rec.endorse_tx) chainMsg('✓ Endorsement offered to <span class="mono">'+esc(trunc(rec.pending_addr))+'</span> — awaiting acceptance · '+txLink(rec.endorse_tx,'View on Stellar Explorer'),'ok');
       else if(rec.accept_tx) chainMsg('✓ <b>Endorsed on Stellar</b> — now held by <span class="mono">'+esc(trunc(rec.holder_addr))+'</span> · '+txLink(rec.accept_tx,'View on Stellar Explorer'),'ok');
       else if(rec.init_tx) chainMsg('✓ Registered on Stellar · '+txLink(rec.init_tx,'View on Stellar Explorer'),'ok');
@@ -2122,6 +2152,11 @@ main{display:block;margin-top:18px}
     var args=[ S.Address.fromString(me).toScVal() ];
     return invokeContract('accept',args,onStatus);
   };
+  window.claimDefaultOnChain = async function(onStatus){
+    var S=sdk(), me=window.STELLAR_PUBKEY;
+    var args=[ S.Address.fromString(me).toScVal() ];
+    return invokeContract('claim_default',args,onStatus);
+  };
 
   /* Read the escrow's current state straight off Stellar — no wallet, no
      signing, no submit. Uses simulateTransaction (a read-only host call) so
@@ -2323,6 +2358,21 @@ main{display:block;margin-top:18px}
     }catch(e){
       handleChainErr(e,'Acceptance');
       if(b){ b.disabled=false; b.textContent='Accept endorsement — take control'; }
+    }
+  }
+  async function onClaimDefault(rec){
+    var b=$('claimDefaultBtn'); if(b){ b.disabled=true; b.textContent='Signing…'; }
+    try{
+      var h=await window.claimDefaultOnChain(chainMsg);
+      rec.default_tx=h; rec.state='DEFAULTED';
+      rec.chain=(rec.chain||[]).concat([{act:'Defaulted — reclaimed by maker after maturity',addr:rec.maker_addr,tx:h}]);
+      await addAudit(rec,'Defaulted on Stellar (claim_default) after maturity · tx '+h.slice(0,12));
+      chainMsg('⚠ <b>Defaulted on Stellar</b> — reclaimed by the maker after maturity · '+txLink(h,'View on Stellar Explorer'),'err');
+      toast('Note defaulted on Stellar');
+      openNote(rec);
+    }catch(e){
+      handleChainErr(e,'Default claim');
+      if(b){ b.disabled=false; b.textContent='Claim default'; }
     }
   }
 
