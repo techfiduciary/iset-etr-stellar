@@ -159,6 +159,7 @@ main{display:block;margin-top:18px}
 .vbadges{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 4px}
 .vbadge{box-sizing:border-box;display:inline-flex;flex:0 0 auto;align-items:center;gap:5px;margin:0;font-size:11px;line-height:1;height:26px;color:var(--muted);background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:0 10px;white-space:nowrap;vertical-align:middle}
 .vbadge.ok{color:var(--ok);border-color:rgba(52,211,153,.35);background:rgba(52,211,153,.10)}
+.vbadge.bad{color:var(--err);border-color:rgba(248,113,113,.35);background:rgba(248,113,113,.10)}
 .toasts{position:fixed;left:0;right:0;bottom:18px;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;z-index:50}
 .toast{background:#10294b;border:1px solid #2b62b6;color:#eaf1fb;font-size:13px;padding:10px 16px;border-radius:10px;max-width:90%;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .toast.err{border-color:#7a2f2f;background:#3a1d1d;color:#f6caca}
@@ -1899,10 +1900,14 @@ main{display:block;margin-top:18px}
     if($('acceptBtn')) $('acceptBtn').addEventListener('click',function(){ onAccept(rec); });
     if($('advBtn')) $('advBtn').addEventListener('click',function(){ advanceState(rec); });
     if($('amendBtn')&&amendable) $('amendBtn').addEventListener('click',function(){ amendRecord(rec); });
-    // chain status line reflects stored on-chain state
+    // chain status line reflects the LATEST on-chain action, not just the
+    // original registration — otherwise an endorsement/acceptance looked like
+    // it "reverted" the line back to "Registered on Stellar".
     if(I.onchain){
       if(rec.settle_tx) chainMsg('✓ <b>'+rec.type+' Settled on Stellar!</b> · '+txLink(rec.settle_tx,'View on Stellar Explorer'),'ok');
-      else if(rec.init_tx) chainMsg('✓ Registered on Stellar · '+txLink(rec.init_tx),'ok');
+      else if(rec.pending_addr && rec.endorse_tx) chainMsg('✓ Endorsement offered to <span class="mono">'+esc(trunc(rec.pending_addr))+'</span> — awaiting acceptance · '+txLink(rec.endorse_tx,'View on Stellar Explorer'),'ok');
+      else if(rec.accept_tx) chainMsg('✓ <b>Endorsed on Stellar</b> — now held by <span class="mono">'+esc(trunc(rec.holder_addr))+'</span> · '+txLink(rec.accept_tx,'View on Stellar Explorer'),'ok');
+      else if(rec.init_tx) chainMsg('✓ Registered on Stellar · '+txLink(rec.init_tx,'View on Stellar Explorer'),'ok');
       else chainMsg('');
     } else { chainMsg('Off-chain settlement — advance the status to record the next audited state change.'); }
   }
@@ -2377,7 +2382,7 @@ main{display:block;margin-top:18px}
         : '<span class="vbadge">Contract’s current active note</span>';
       box.innerHTML='<div class="result" style="margin-top:10px">'+
         '<div class="vbadges"><span class="vbadge ok">✓ Live from Stellar</span>'+confBadge+
-        '<span class="vbadge '+(oc.status==='Released'?'ok':'')+'">'+esc(oc.status||'—')+'</span></div>'+
+        '<span class="vbadge '+(oc.status==='Defaulted'?'bad':'ok')+'">'+esc(oc.status||'—')+'</span></div>'+
         '<dl><dt>Maker</dt><dd class="mono">'+esc(oc.maker||'—')+'</dd>'+
         holderLine+pendLine+
         '</dl><p class="note">Control read live from the settlement contract — no wallet, no trust in this page required; anyone can repeat it. '+link+'</p></div>';
