@@ -795,7 +795,10 @@ main{display:block;margin-top:18px}
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  function fmtAmt(n){ var x=Number(n); return isFinite(x)?x.toLocaleString('en-US',{maximumFractionDigits:2}):String(n); }
+  /* Every money value renders with two decimals, everywhere — document, live
+     summary, docs list, dashboard, share text, verification. A stated sum of
+     "PHP 1,000,000" is ambiguous about centavos; "PHP 1,000,000.00" is not. */
+  function fmtAmt(n){ var x=Number(n); return isFinite(x)?x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):String(n); }
   /* Face-value formatting: always two decimals, and the amount spelled out in
      words below it — the classic anti-tamper convention on paper instruments. */
   function fmtAmt2(n){ var x=Number(n); return isFinite(x)?x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):String(n); }
