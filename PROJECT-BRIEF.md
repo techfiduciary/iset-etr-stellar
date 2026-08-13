@@ -1,4 +1,4 @@
-# ISET eTR on Stellar — Project Brief
+# ISET eInstruments on Stellar — Project Brief
 
 *A self-contained reference for taking this project into any conversation, review, or handoff. Written 2026-07-12.*
 
@@ -6,7 +6,7 @@
 
 ## 1. What this is
 
-**ISET eTR on Stellar** is a live web app that issues **Electronic Transferable Records (eTR)** — legally-structured digital trade instruments — and settles them on the Stellar blockchain. It's the Stellar-network integration of **ISET** (Indigenous Sovereign Estate Trust), whose core product (`iset.finance`) is a production registry that issues six trade instruments under a post-quantum-signed, MLETR-aligned legal framework.
+**ISET eInstruments on Stellar** is a live web app that issues **electronic trade instruments** — legally-structured digital trade instruments — and settles them on the Stellar blockchain. It's the Stellar-network integration of **ISET** (Indigenous Sovereign Estate Trust), whose core product (`iset.finance`) is a production registry that issues six trade instruments under a post-quantum-signed, MLETR-aligned legal framework.
 
 **Live app:** https://stellar.iset.finance
 **GitHub:** https://github.com/techfiduciary/iset-etr-stellar (public, MIT license)

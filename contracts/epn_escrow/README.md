@@ -1,4 +1,4 @@
-##### **ISET eTR: The Neutral Trust Layer for Stellar RWA**
+##### **ISET eInstruments: The Neutral Trust Layer for Stellar RWA**
 
 APAC STELLAR HACKATHON · LOCAL FINANCE \& RWA TRACK
 
@@ -24,7 +24,7 @@ Institutions refuse to put commercial trade data onto public blockchains due to 
 
 
 **The Solution: The Settlement Router**
-ISET eTR acts as a Neutral Trust Layer. We separate the Legal State (managed by ISET off-chain) from the Settlement State (managed by Stellar on-chain).
+ISET eInstruments acts as a Neutral Trust Layer. We separate the Legal State (managed by ISET off-chain) from the Settlement State (managed by Stellar on-chain).
 
 Off-Chain (ISET): Holds the legal state of the document, fully compliant with international standards.
 The Bridge: When legal ownership changes off-chain, ISET generates a Post-Quantum cryptographic proof.
@@ -32,7 +32,7 @@ On-Chain (Stellar): The proof triggers a Soroban Smart Contract to execute USDC 
 
 
 
-**The ISET eTR Suite (The 6 Instruments)**
+**The ISET eInstruments Suite (The 6 Instruments)**
 While this hackathon demo focuses on a single use case, the ISET engine supports the full lifecycle of global trade:
 
 ePN (Electronic Promissory Note)
@@ -55,7 +55,7 @@ If our architecture can securely execute a micro ePN factoring flow, the exact s
 
 
 **⚖️ Legal Compliance (Global \& Philippine Framework)**
-The ISET eTR engine is built to handle the diverse legal requirements of all 6 trade instruments:
+The ISET eInstruments engine is built to handle the diverse legal requirements of all 6 trade instruments:
 
 UNCITRAL MLETR: The foundational international standard allowing all 6 instruments to exist as legally enforceable electronic transferable records with a single identifiable controller.
 RA 8792 (Electronic Commerce Act): Validates electronic signatures, data messages, and digital documents across all instruments.

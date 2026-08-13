@@ -1,11 +1,11 @@
 <div align="center">
 
-<img src="assets/eTR.png" alt="ISET eTR" width="88">
+<img src="assets/eIN.png" alt="ISET eInstruments" width="88">
 
-# ISET eTR on Stellar
+# ISET eInstruments on Stellar
 
 **Electronic Promissory Notes — legally-structured digital records, post-quantum signed, settling in Stellar USDC.**
-*ePN is one instrument in ISET's Electronic Transferable Records (eTR) suite.*
+*ePN is one instrument in ISET's eInstruments suite.*
 
 [![Live App](https://img.shields.io/badge/Live-stellar.iset.finance-2456c8)](https://stellar.iset.finance)
 [![Mainnet](https://img.shields.io/badge/Soroban-Mainnet%20Live-brightgreen)](https://stellar.expert/explorer/public/contract/CBDFHJ2V7YBQGF4PNDPTKAALHIE6PYRBL6PVAGMJA5OFFEUMHJYQLL7O)
@@ -45,7 +45,7 @@ Reviewers can switch networks **directly in the app** — a Testnet/Mainnet togg
 ## 📱 The App
 
 <div align="center">
-<img src="assets/screenshots/home-desktop.png" alt="ISET eTR on Stellar — Home" width="720">
+<img src="assets/screenshots/home-desktop.png" alt="ISET eInstruments on Stellar — Home" width="720">
 <br><br>
 <img src="assets/screenshots/issue-mobile.png" alt="Issue an ePN" width="260">&nbsp;&nbsp;
 <img src="assets/screenshots/note-mobile.png" alt="The signed ePN document" width="260">
@@ -70,7 +70,7 @@ Reviewers can switch networks **directly in the app** — a Testnet/Mainnet togg
 
 ## 👤 Founder
 
-**Francis Neri — Founder & Tech Fiduciary.** A trade-finance infrastructure architect with deep expertise in legal tech. Recognizing that public blockchains lack the legal enforceability institutions require — and that institutions will not put commercial data on public chains — he designed ISET eTR as the missing **neutral trust layer**: private, legally-structured enterprise records bridged to public blockchain settlement.
+**Francis Neri — Founder & Tech Fiduciary.** A trade-finance infrastructure architect with deep expertise in legal tech. Recognizing that public blockchains lack the legal enforceability institutions require — and that institutions will not put commercial data on public chains — he designed ISET eInstruments as the missing **neutral trust layer**: private, legally-structured enterprise records bridged to public blockchain settlement.
 
 ISET operates a live production registry at [iset.finance](https://iset.finance) — this repository is its Stellar settlement integration.
 
@@ -80,7 +80,7 @@ ISET operates a live production registry at [iset.finance](https://iset.finance)
 
 ## 🚀 Vision & Product
 
-**The vision: become the default legal settlement rail for global trade.** $11T of trade still runs on paper. ISET eTR turns slow, paper-based trade finance into digitally enforceable, instantly transferable, on-chain-settleable assets.
+**The vision: become the default legal settlement rail for global trade.** $11T of trade still runs on paper. ISET eInstruments turns slow, paper-based trade finance into digitally enforceable, instantly transferable, on-chain-settleable assets.
 
 ### Core features
 
@@ -189,6 +189,6 @@ MIT — see [LICENSE](LICENSE).
 
 <div align="center">
 
-**© 2026 ISET eTR** · [stellar.iset.finance](https://stellar.iset.finance) · fiduciary@iset.finance
+**© 2026 ISET eInstruments** · [stellar.iset.finance](https://stellar.iset.finance) · fiduciary@iset.finance
 
 </div>

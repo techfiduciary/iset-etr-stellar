@@ -1,6 +1,6 @@
 #![no_std]
 
-//! # ePN Escrow — ISET eTR settlement contract
+//! # ePN Escrow — ISET eInstruments settlement contract
 //!
 //! Settlement state machine for a single Electronic Promissory Note (ePN).
 //!

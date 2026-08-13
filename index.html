@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  ISET eTR on Stellar — Electronic Transferable Records
+  ISET eInstruments on Stellar — Electronic Trade Instruments
   https://stellar.iset.finance · https://github.com/techfiduciary/iset-etr-stellar
 
   Single-file static app, no framework, no build step.
@@ -13,18 +13,18 @@
       identity badge · cross-border FX + withholding tax · amendment workflow
     · Views: Dashboard · Issue · Documents · Verify · Brand — state in localStorage
 
-  © 2026 ISET eTR · MIT License
+  © 2026 ISET eInstruments · MIT License
 -->
 <html lang="en" data-theme="dark"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-<title>eTransferable Records · by ISET on Stellar</title>
+<title>eInstruments · by ISET on Stellar</title>
 <meta name="description" content="Issue, hold, and verify the six electronic transferable records — post-quantum signed, independently verifiable, settled on the Stellar network.">
 <meta name="theme-color" content="#0b1f3a">
-<link rel="icon" type="image/png" href="/assets/eTR.png">
-<link rel="apple-touch-icon" href="/assets/eTR.png">
-<meta property="og:title" content="eTransferable Records · by ISET on Stellar">
+<link rel="icon" type="image/png" href="/assets/eIN.png">
+<link rel="apple-touch-icon" href="/assets/eIN.png">
+<meta property="og:title" content="eInstruments · by ISET on Stellar">
 <meta property="og:description" content="Six post-quantum-signed trade instruments, settled on the Stellar network.">
-<meta property="og:image" content="/assets/eTR.png">
+<meta property="og:image" content="/assets/eIN.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/4.1.0/index.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@albedo-link/intent@0.12.0/lib/albedo.intent.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@13.0.0/dist/stellar-sdk.min.js" defer></script>
@@ -481,9 +481,9 @@ main{display:block;margin-top:18px}
 
   <header class="topbar">
     <div class="brand">
-      <img class="logo" src="/assets/eTR.png" alt="eTransferable Records" width="34" height="34">
+      <img class="logo" src="/assets/eIN.png" alt="eInstruments" width="34" height="34">
       <div class="brandtext">
-        <span class="mark">eTransferable Records</span>
+        <span class="mark">eInstruments</span>
         <span class="sub">by ISET · on Stellar</span>
       </div>
     </div>
@@ -644,7 +644,7 @@ main{display:block;margin-top:18px}
         <div class="doc-body">
           <div class="doc-kick" id="dKick">Electronic Promissory Note</div>
           <div class="doc-title" id="dTitle">ELECTRONIC PROMISSORY NOTE</div>
-          <div class="doc-sub" id="dSub">ePN · Issued via ISET eTR</div>
+          <div class="doc-sub" id="dSub">ePN · Issued via eInstruments</div>
           <p class="doc-legal" id="dLegal">—</p>
           <div class="doc-amt" id="dAmount">—</div>
           <div class="doc-amt-words" id="dAmountWords"></div>
@@ -671,7 +671,7 @@ main{display:block;margin-top:18px}
             </span>
             <span class="fchip">
               <span class="fic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
-              <span class="ft"><b>Registered: ISET eTR</b><i>Post-quantum signed · MLETR aligned</i></span>
+              <span class="ft"><b>Registered: eInstruments</b><i>Post-quantum signed · MLETR aligned</i></span>
             </span>
             <span class="fchip">
               <span class="fic"><img src="/assets/stellar.png" alt="Stellar"></span>
@@ -884,6 +884,19 @@ main{display:block;margin-top:18px}
 
   var CCY=[['PHP','PHP — Philippine Peso'],['USDC','USDC — Stellar USDC'],['XLM','XLM — Stellar Lumen'],['USD','USD — US Dollar'],['EUR','EUR — Euro'],['SGD','SGD — Singapore Dollar'],['JPY','JPY — Yen'],['CNY','CNY — Renminbi'],['AED','AED — UAE Dirham']];
   function ccyOpts(sel){ return CCY.map(function(c){ return '<option value="'+c[0]+'"'+(c[0]===sel?' selected':'')+'>'+c[1]+'</option>'; }).join(''); }
+
+  /* Settlement is rail-agnostic by construction: the Soroban contract stores
+     {maker, lender, amount, maturity} and no asset field, so it governs control
+     and lifecycle whatever the parties settle in. On-chain assets settle inside
+     Stellar; the rest settle on the parties' existing bank or e-money rail while
+     control stays enforced on-chain. */
+  var SETTLE_ONCHAIN=[['USDC','USDC — Stellar USDC'],['XLM','XLM — Stellar Lumen']];
+  var SETTLE_OFFCHAIN=[['PHP','PHP — Philippine Peso'],['USD','USD — US Dollar'],['EUR','EUR — Euro'],['GBP','GBP — Pound Sterling'],['JPY','JPY — Yen'],['SGD','SGD — Singapore Dollar'],['AUD','AUD — Australian Dollar'],['HKD','HKD — Hong Kong Dollar'],['CNY','CNY — Renminbi'],['AED','AED — UAE Dirham'],['INR','INR — Indian Rupee']];
+  function settleLabel(code){
+    for(var i=0;i<SETTLE_ONCHAIN.length;i++) if(SETTLE_ONCHAIN[i][0]===code) return SETTLE_ONCHAIN[i][1].split('—')[1].trim();
+    return code ? code+' · off-chain rail' : '';
+  }
+  function isOnchainSettle(code){ return SETTLE_ONCHAIN.some(function(c){ return c[0]===code; }); }
 
   /* ─────────────────────────────────────────────────────────────────────────
      INSTRUMENT REGISTRY — one config per instrument drives the form, the
@@ -1408,8 +1421,13 @@ main{display:block;margin-top:18px}
       f.opts.map(function(o){ return '<label class="chk"><input type="checkbox" value="'+esc(o)+'">'+esc(o)+'</label>'; }).join('')+'</div></div>';
   }
   function settleRow(f){
-    // Settlement runs on Stellar, so the settlement asset is a Stellar asset.
-    return '<div class="row" id="settleWrap"><div><label class="lbl">Settlement currency *</label><select class="input" id="f_settle_ccy"><option value="USDC" selected>USDC — Stellar USDC</option><option value="XLM">XLM — Stellar Lumen</option></select></div>'+
+    // The contract governs control, not money — Terms carries no asset field, so
+    // settlement is rail-agnostic. On-chain assets and off-chain rails both apply.
+    var onchain=SETTLE_ONCHAIN.map(function(c){ return '<option value="'+c[0]+'"'+(c[0]==='USDC'?' selected':'')+'>'+esc(c[1])+'</option>'; }).join('');
+    var offchain=SETTLE_OFFCHAIN.map(function(c){ return '<option value="'+c[0]+'">'+esc(c[1])+'</option>'; }).join('');
+    return '<div class="row" id="settleWrap"><div><label class="lbl">Settlement currency *</label><select class="input" id="f_settle_ccy">'+
+      '<optgroup label="Settles on Stellar">'+onchain+'</optgroup>'+
+      '<optgroup label="Settles off-chain — bank or e-money rail">'+offchain+'</optgroup></select></div>'+
       '<div id="fxCell" style="display:none"><label class="lbl">Indicative FX rate</label><input class="input" id="f_fx_rate" inputmode="decimal" placeholder="e.g. 0.0180"></div></div>';
   }
   function renderForm(){
@@ -1536,9 +1554,12 @@ main{display:block;margin-top:18px}
       calc.amount=amount; calc.big=amount;
     }
     // FX
+    // Settlement currency is always recorded — it is a term of the note, not an
+    // FX artefact. The rate only applies when it differs from the base currency.
     var sc=$('f_settle_ccy');
-    if(sc && sc.value!==ccy){ var rate=num('f_fx_rate'); calc.settle_ccy=sc.value; calc.fx_rate=rate;
-      if(rate>0){ calc.settle_amount=(calc.grand?calc.grand[1]:calc.amount)*rate; } }
+    if(sc){ calc.settle_ccy=sc.value;
+      if(sc.value!==ccy){ var rate=num('f_fx_rate'); calc.fx_rate=rate;
+        if(rate>0){ calc.settle_amount=(calc.grand?calc.grand[1]:calc.amount)*rate; } } }
     return calc;
   }
   function recompute(){
@@ -1547,8 +1568,11 @@ main{display:block;margin-top:18px}
     var grand = calc.grand ? '<div class="grand"><span>'+esc(calc.grand[0])+'</span><span>'+calc.currency+' '+fmtAmt(calc.grand[1])+'</span></div>' :
                 (calc.big? '<div class="grand"><span>Amount</span><span>'+calc.currency+' '+fmtAmt(calc.big)+'</span></div>':'');
     var repay = calc.repay ? '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px"><span>Repayment</span><span>'+esc(calc.repay)+'</span></div>' : '';
-    var fx = (calc.settle_ccy&&calc.settle_amount) ? '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px"><span>≈ Settlement in '+calc.settle_ccy+' @ '+calc.fx_rate+'</span><span>'+calc.settle_ccy+' '+fmtAmt(calc.settle_amount)+'</span></div>' :
-             (calc.settle_ccy? '<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px"><span>Settlement currency</span><span>'+calc.settle_ccy+' · enter indicative rate</span></div>':'');
+    var fxOpen='<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px">';
+    var fx = !calc.settle_ccy ? '' :
+             calc.settle_amount ? fxOpen+'<span>≈ Settlement in '+calc.settle_ccy+' @ '+calc.fx_rate+'</span><span>'+calc.settle_ccy+' '+fmtAmt(calc.settle_amount)+'</span></div>' :
+             (calc.settle_ccy===calc.currency) ? fxOpen+'<span>Settlement currency</span><span>'+calc.settle_ccy+(isOnchainSettle(calc.settle_ccy)?' · on Stellar':' · off-chain rail')+'</span></div>' :
+             fxOpen+'<span>Settlement currency</span><span>'+calc.settle_ccy+' · enter indicative rate</span></div>';
     var inote = calc.hasInterest ? '<div class="small" style="color:var(--muted);margin-top:8px;font-size:11px;line-height:1.4">Indicative — interest is computed to the stated maturity. It accrues to the actual settlement date; settling early reduces the interest proportionately.</div>' : '';
     if(!rows.length && !calc.grand && !calc.big && !fx && !repay){ box.style.display='none'; return; }
     box.style.display='block'; box.innerHTML=rows.join('')+grand+repay+fx+inote;
@@ -1578,7 +1602,9 @@ main{display:block;margin-top:18px}
     if(!(amount>0)) return issueErr('Enter an amount / value greater than zero.');
     // derived
     if(CUR==='eBE' && f.tenor){ f.maturity_date=addDays(f.issue_date||today(), Number(f.tenor)||0); }
-    f.settlement_rail='Stellar USDC'; f.stellar_pubkey=window.STELLAR_PUBKEY||'';
+    // Record the rail the parties actually chose, not a fixed one.
+    f.settlement_rail = isOnchainSettle(f.settle_ccy) ? ('Stellar '+f.settle_ccy) : ((f.settle_ccy||'')+' · off-chain rail');
+    f.stellar_pubkey=window.STELLAR_PUBKEY||'';
     var holder = f[p2]||f[p1];
     var btn=$('issueBtn'); btn.disabled=true; btn.textContent='Issuing & signing…';
     try{
@@ -1721,7 +1747,7 @@ main{display:block;margin-top:18px}
     // specific instrument (I.name) — was previously the same string twice.
     $('dKick').textContent='Electronic Transferable Records';
     $('dTitle').textContent=I.name.toUpperCase();
-    $('dSub').textContent=I.code+' · Issued via ISET eTR';
+    $('dSub').textContent=I.code+' · Issued via eInstruments';
     $('dLegal').textContent=I.legal;
     // amount — headline is the instrument's face value (principal for ePN, total
     // payable for eINV); any WHT deduction / net proceeds is shown in Financials.
@@ -1755,7 +1781,13 @@ main{display:block;margin-top:18px}
       (n.calc.rows||[]).forEach(function(r){ fr+='<div class="kv"><span class="k">'+esc(r[0])+'</span><span class="v">'+(r[1]<0?'− ':'')+n.currency+' '+fmtAmt(Math.abs(r[1]))+'</span></div>'; });
       // Settlement before the grand total: in the 2-col grid this seats the
       // grand (Net to payee) directly under the withholding-tax row.
-      if(n.calc.settle_ccy) fr+='<div class="kv"><span class="k">Settlement currency</span><span class="v">'+esc(n.calc.settle_ccy)+(n.calc.settle_amount?' · ≈ '+fmtAmt(n.calc.settle_amount)+' @ '+esc(n.calc.fx_rate):'')+'</span></div>';
+      // Prints the rail as well as the code — an off-chain settlement currency is
+      // a term of the note, and the reader should not have to infer the rail.
+      if(n.calc.settle_ccy){
+        var sfx = n.calc.settle_amount ? (' · ≈ '+fmtAmt(n.calc.settle_amount)+' @ '+esc(n.calc.fx_rate))
+                                       : (isOnchainSettle(n.calc.settle_ccy)?' · on Stellar':' · off-chain rail');
+        fr+='<div class="kv"><span class="k">Settlement currency</span><span class="v">'+esc(n.calc.settle_ccy)+sfx+'</span></div>';
+      }
       if(n.calc.grand) fr+='<div class="kv"><span class="k">'+esc(n.calc.grand[0])+'</span><span class="v">'+n.currency+' '+fmtAmt2(n.calc.grand[1])+'</span></div>';
       if(n.calc.hasInterest) fr+='<div class="small" style="grid-column:1/-1;color:#6b7686;margin-top:8px;font-size:9px;line-height:1.4">Indicative — interest is computed to the stated maturity. It accrues to the actual settlement date; settling early reduces the interest proportionately.</div>';
       fr+='</div>'; html+=fr;
@@ -1843,8 +1875,9 @@ main{display:block;margin-top:18px}
     var issuerTin=f.maker_tin||f.drawer_tin||f.shipper_tin||f.applicant_tin||f.depositor_tin||f.seller_tin||'';
     $('dIdName').textContent = issuerTin ? 'Issuer verified via ISET registry' : 'Issuer registered via ISET';
     $('dIdSub').textContent = issuerTin ? ('TIN '+issuerTin+' on file · personal data stays off-chain') : 'No TIN on file · add one in Brand for a verified badge';
-    // Footer settlement label follows the chosen Stellar settlement asset.
-    $('dSettleCcy').textContent = (f.settle_ccy==='XLM') ? 'Stellar Lumen' : 'Stellar USDC';
+    // Footer settlement label follows whatever the parties chose — Stellar asset
+    // or off-chain rail. Control stays on-chain either way.
+    $('dSettleCcy').textContent = settleLabel(f.settle_ccy) || 'Stellar USDC';
     $('dVerifyBtn').href=verifyUrl(n.id); $('openVerifyBtn').href=verifyUrl(n.id);
     $('dSig').innerHTML='<b>Signature '+esc(n.signature_alg||'ML-DSA-65')+':</b> '+esc(String(n.signature||'').slice(0,64))+'…<br>'+
       '<b>Record hash:</b> '+esc(n.record_hash||'')+'<br>Registry record, verifiable by reference'+
